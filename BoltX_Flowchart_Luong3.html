@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BoltX — Quy Trình Luồng 3: Dự Án / Epic Lớn</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:    #1E3A5F;
+    --blue:    #2E75B6;
+    --teal:    #1A7B8A;
+    --green:   #1F7A4D;
+    --orange:  #C55A11;
+    --red:     #B22222;
+    --purple:  #5B2D8E;
+    --indigo:  #3730A3;
+    --gray:    #6B7280;
+    --lblue:   #D6E4F0;
+    --lgreen:  #D9EAD3;
+    --lorange: #FCE4D6;
+    --lred:    #FDECEA;
+    --lpurple: #EDE7F6;
+    --lindigo: #E0E7FF;
+    --bg:      #EEEDF7;
+    --card:    #F0F0F8;
+    --border:  #CBD5E1;
+  }
+  body {
+    font-family: 'Be Vietnam Pro', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    color: #1a1a1a;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(120deg, #1a1060 0%, #3730A3 60%, #5B2D8E 100%);
+    padding: 22px 32px 18px;
+    color: #fff;
+  }
+  .header-eyebrow { font-size:10px; opacity:.7; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; }
+  .header-title   { font-size:22px; font-weight:900; letter-spacing:-.5px; }
+  .header-sub     { font-size:13px; opacity:.8; margin-top:4px; }
+  .tabs { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+  .tab-btn {
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2);
+    color:#fff; border-radius:6px; padding:5px 14px;
+    font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; font-family:inherit;
+  }
+  .tab-btn:hover  { background:rgba(255,255,255,.15); }
+  .tab-btn.active { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.6); font-weight:800; }
+
+  /* ── LAYOUT ── */
+  .body-wrap { padding:24px 28px; width:100%; }
+  .card { background:#fff; border-radius:14px; padding:24px; box-shadow:0 2px 16px rgba(0,0,0,.08); }
+
+  /* ── TABS ── */
+  .tab-panel { display:none; }
+  .tab-panel.active { display:flex; gap:20px; width:100%; align-items:flex-start; }
+  #panel-phases.active,
+  #panel-approval.active,
+  #panel-handover.active { flex-direction:column; }
+
+  /* ─── FLOW TAB ─── */
+  #panel-flow { flex-wrap:nowrap; }
+  .flow-card   { flex:0 0 560px; width:560px; }
+  .detail-card { flex:1; min-width:0; overflow:hidden; }
+
+  .hint-badge {
+    background:var(--lindigo); border-radius:6px; padding:3px 10px;
+    font-size:11px; color:var(--indigo); font-weight:700;
+    display:inline-block; margin-bottom:20px; border:1px solid #c7d2fe;
+  }
+
+  /* swimlane */
+  .swimlane-wrap { display:flex; gap:0; }
+  .role-col { width:90px; flex-shrink:0; display:flex; flex-direction:column; }
+  .role-cell {
+    display:flex; align-items:center; justify-content:flex-end;
+    padding-right:10px; border-right:3px solid;
+    font-size:9.5px; font-weight:700; text-align:right; line-height:1.3;
+  }
+  .flow-col { flex:1; display:flex; flex-direction:column; align-items:center; padding-left:16px; }
+
+  /* nodes */
+  .node {
+    border-radius:10px; padding:10px 14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.12);
+    transition:transform .18s, box-shadow .18s; user-select:none; text-align:center;
+  }
+  .node:hover  { transform:scale(1.04); box-shadow:0 4px 14px rgba(0,0,0,.18); }
+  .node.active { transform:scale(1.06); }
+  .node .nlabel { color:#fff; font-weight:700; font-size:12.5px; line-height:1.3; }
+  .node .nsub   { color:#fff; opacity:.82; font-size:10.5px; margin-top:2px; }
+
+  .node-start {
+    background:linear-gradient(135deg, #3730A3, #5B2D8E);
+    border-radius:30px; padding:9px 24px;
+    color:#fff; font-weight:900; font-size:13px;
+    box-shadow:0 3px 14px rgba(55,48,163,.4); user-select:none;
+  }
+
+  /* phase label */
+  .phase-label {
+    display:flex; align-items:center; gap:8px;
+    background:linear-gradient(90deg, var(--indigo), var(--purple));
+    color:#fff; border-radius:8px; padding:6px 14px;
+    font-size:11px; font-weight:800; margin:6px 0;
+    box-shadow:0 2px 8px rgba(55,48,163,.25);
+  }
+  .phase-num {
+    background:rgba(255,255,255,.25); border-radius:50%;
+    width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:900;
+  }
+
+  /* repeat sprint banner */
+  .sprint-banner {
+    border:2px dashed #c7d2fe; border-radius:10px;
+    background:var(--lindigo); padding:10px 16px; width:200px;
+    text-align:center;
+  }
+  .sprint-banner .sb-title { font-weight:800; font-size:12px; color:var(--indigo); }
+  .sprint-banner .sb-sub   { font-size:10.5px; color:var(--indigo); opacity:.8; margin-top:2px; }
+
+  /* gate */
+  .gate-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    border-radius:20px; padding:5px 12px;
+    box-shadow:0 2px 6px rgba(0,0,0,.13); margin-bottom:6px;
+  }
+  .gate-num   { background:rgba(255,255,255,.22); border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:11px; color:#fff; }
+  .gate-label { color:#fff; font-weight:700; font-size:11px; }
+
+  /* diamond */
+  .diamond-wrap  { display:flex; flex-direction:column; align-items:center; }
+  .diamond-outer { transform:rotate(45deg); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.10); }
+  .diamond-inner { transform:rotate(-45deg); text-align:center; padding:6px; }
+  .diamond-inner .dlabel { color:#fff; font-weight:700; font-size:11px; line-height:1.3; }
+
+  /* arrows */
+  .arrow-down  { display:flex; flex-direction:column; align-items:center; }
+  .arrow-label { font-size:10px; font-weight:700; }
+
+  /* reject / back box */
+  .reject-box {
+    background:var(--lred); border:1px solid rgba(178,34,34,.35);
+    border-radius:8px; padding:6px 10px;
+    font-size:10.5px; color:var(--red); font-weight:700; text-align:center;
+  }
+  .reject-box span { font-weight:400; display:block; }
+  .back-box {
+    background:var(--lorange); border:1px solid rgba(197,90,17,.35);
+    border-radius:8px; padding:6px 10px;
+    font-size:10.5px; color:var(--orange); font-weight:700; text-align:center; width:90px;
+  }
+  .back-box span { font-weight:400; display:block; }
+
+  /* detail panel */
+  .detail-empty {
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    gap:10px; text-align:center; padding:16px 8px;
+  }
+  .de-icon  { font-size:40px; }
+  .de-title { font-weight:800; color:var(--navy); font-size:16px; }
+  .de-sub   { color:var(--gray); font-size:13px; line-height:1.6; }
+  .step-list { width:100%; margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+  .step-list-item {
+    background:var(--card); border-left:4px solid; border-radius:8px;
+    padding:8px 14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:space-between;
+    transition:background .15s; text-align:left;
+  }
+  .step-list-item:hover { background:#e2e8f0; }
+  .sli-title { font-weight:700; font-size:12.5px; color:var(--navy); }
+  .sli-role  { font-size:11px; color:var(--gray); margin-top:1px; }
+
+  .detail-content { display:none; }
+  .detail-content.active { display:block; }
+  .detail-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; }
+  .detail-title  { font-size:18px; font-weight:900; margin-bottom:4px; }
+  .close-btn {
+    background:var(--card); border:none; border-radius:6px;
+    padding:4px 10px; cursor:pointer; font-size:18px; color:var(--gray);
+    font-family:inherit; line-height:1; flex-shrink:0;
+  }
+  .role-tag { display:inline-block; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:800; }
+  .section-label { font-size:11px; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; margin-top:18px; }
+  .activity-list { display:flex; flex-direction:column; gap:6px; }
+  .activity-item { display:flex; gap:10px; align-items:flex-start; }
+  .act-num  { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:900; color:#fff; flex-shrink:0; margin-top:1px; }
+  .act-text { font-size:13px; color:#374151; line-height:1.5; }
+  .doc-list { display:flex; flex-wrap:wrap; gap:6px; }
+  .doc-tag  { border-radius:6px; padding:4px 10px; font-size:12px; font-weight:700; }
+  .gate-note { font-size:11px; color:var(--gray); margin-top:6px; }
+  .info-box {
+    border-radius:8px; padding:10px 14px; margin-bottom:14px;
+    font-size:12px; line-height:1.5; border:1.5px solid;
+  }
+
+  /* ─── PHASES TAB ─── */
+  .phases-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .phase-card  { border-radius:12px; border:2px solid; padding:20px; }
+  .pc-badge { display:inline-flex; align-items:center; gap:6px; border-radius:20px; padding:4px 12px; margin-bottom:12px; font-size:11px; font-weight:800; color:#fff; }
+  .pc-title { font-size:15px; font-weight:800; color:var(--navy); margin-bottom:8px; }
+  .pc-duration { font-size:11px; font-weight:700; margin-bottom:12px; }
+  .pc-items { display:flex; flex-direction:column; gap:5px; }
+  .pc-item { display:flex; gap:8px; font-size:12px; color:#374151; }
+  .pc-dot  { flex-shrink:0; margin-top:3px; width:7px; height:7px; border-radius:50%; }
+  .pc-docs { margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+  .pc-docs-title { font-size:10px; font-weight:800; color:var(--gray); text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px; }
+  .pc-doc-tag { display:inline-block; border-radius:4px; padding:2px 8px; font-size:10.5px; font-weight:700; margin:2px 2px 0 0; }
+
+  /* ─── APPROVAL TAB ─── */
+  .appr-title { font-size:17px; font-weight:900; color:var(--navy); margin-bottom:6px; }
+  .appr-sub   { font-size:13px; color:var(--gray); margin-bottom:24px; }
+  .appr-flow  { display:flex; flex-direction:column; gap:0; }
+  .appr-step  { display:flex; align-items:stretch; gap:0; }
+  .appr-left  { width:52px; display:flex; flex-direction:column; align-items:center; }
+  .appr-circle { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:13px; flex-shrink:0; }
+  .appr-line   { width:2px; flex:1; min-height:12px; opacity:.3; }
+  .appr-body   { flex:1; padding-bottom:20px; padding-left:12px; }
+  .appr-step-title { font-weight:800; font-size:14px; color:var(--navy); margin-bottom:4px; }
+  .appr-step-who   { font-size:12px; font-weight:700; margin-bottom:6px; }
+  .appr-step-items { display:flex; flex-direction:column; gap:3px; }
+  .appr-step-item  { font-size:12px; color:#374151; display:flex; gap:6px; }
+  .appr-confirm { display:inline-flex; align-items:center; gap:5px; border-radius:6px; padding:3px 10px; font-size:11px; font-weight:700; margin-top:8px; }
+
+  /* ─── HANDOVER TAB ─── */
+  .ho-title { font-size:17px; font-weight:900; color:var(--navy); margin-bottom:6px; }
+  .ho-sub   { font-size:13px; color:var(--gray); margin-bottom:24px; }
+  .ho-grid  { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+  .ho-section { border-radius:10px; border:1.5px solid; padding:16px; }
+  .ho-section-title { font-weight:800; font-size:13px; margin-bottom:10px; }
+  .ho-item { display:flex; gap:8px; margin-bottom:7px; align-items:flex-start; }
+  .ho-icon { flex-shrink:0; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; font-weight:900; margin-top:1px; }
+  .ho-text { font-size:12px; color:#374151; line-height:1.4; }
+  .version-table { width:100%; border-collapse:collapse; }
+  .version-table th { background:var(--navy); color:#fff; font-size:12px; font-weight:700; padding:8px 12px; text-align:left; }
+  .version-table td { padding:8px 12px; font-size:12px; border-bottom:1px solid var(--border); }
+  .version-table tr:nth-child(even) td { background:var(--card); }
+  .vbadge { border-radius:4px; padding:2px 8px; font-size:11px; font-weight:700; }
+
+  /* ─── LEGEND ─── */
+  .legend { padding:12px 28px 24px; display:flex; gap:16px; flex-wrap:wrap; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--gray); }
+  .leg-solid  { width:24px; height:2px; }
+  .leg-dashed { width:24px; height:0; border-top:2px dashed; }
+  .leg-dot    { width:12px; height:12px; border-radius:50%; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-eyebrow">BoltX Platform</div>
+  <div class="header-title">🏗️ Quy Trình Dự Án / Epic Lớn — Luồng 3</div>
+  <div class="header-sub">Feature lớn · Dự án mới · Complexity L–XL · Thời gian &gt; 2 tuần</div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="flow">🔄 Luồng xử lý</button>
+    <button class="tab-btn" data-tab="phases">📐 3 Giai đoạn</button>
+    <button class="tab-btn" data-tab="approval">✅ Phê duyệt</button>
+    <button class="tab-btn" data-tab="handover">📦 Bàn giao & Phiên bản</button>
+  </div>
+</div>
+
+<div class="body-wrap">
+
+  <!-- ══════════════════════════════════════
+       TAB: LUỒNG XỬ LÝ
+  ══════════════════════════════════════ -->
+  <div id="panel-flow" class="tab-panel active">
+
+    <!-- FLOWCHART -->
+    <div class="card flow-card">
+      <div class="hint-badge">🏗️ Nhấn vào từng bước để xem chi tiết</div>
+
+      <div class="swimlane-wrap">
+
+        <!-- Role labels -->
+        <div class="role-col" id="roleCol">
+          <div class="role-cell" id="role0" style="border-color:#F59E0B33;color:#F59E0B;">KH / Cty thành viên</div>
+          <div class="role-cell" id="role1" style="border-color:#5B2D8E33;color:#5B2D8E;">PM / PO / CEO</div>
+          <div class="role-cell" id="role2" style="border-color:#2E75B633;color:#2E75B6;">BA</div>
+          <div class="role-cell" id="role3" style="border-color:#3730A333;color:#3730A3;">PM / PO</div>
+          <div class="role-cell" id="role4" style="border-color:#1E3A5F33;color:#1E3A5F;">BA + DEV</div>
+          <div class="role-cell" id="role5" style="border-color:#1E3A5F33;color:#1E3A5F;">DEV</div>
+          <div class="role-cell" id="role6" style="border-color:#1A7B8A33;color:#1A7B8A;">QA / BA / User</div>
+          <div class="role-cell" id="role7" style="border-color:#1F7A4D33;color:#1F7A4D;">PM / DevOps</div>
+          <div class="role-cell" id="role8" style="border-color:#5B2D8E33;color:#5B2D8E;">PM / BA / CEO</div>
+        </div>
+
+        <!-- Flow column -->
+        <div class="flow-col">
+
+          <!-- ZONE 0: KH -->
+          <div id="lm0"></div>
+          <div style="height:80px;display:flex;align-items:center;">
+            <div class="node-start">📋 Đề xuất Dự án / Feature lớn</div>
+          </div>
+          <div class="arrow-down"><svg width="20" height="36"><line x1="10" y1="0" x2="10" y2="26" stroke="#6B7280" stroke-width="2"/><polygon points="5,26 15,26 10,34" fill="#6B7280"/></svg></div>
+
+          <!-- ZONE 1: PM/PO/CEO — Khởi động -->
+          <div id="lm1"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0;">
+            <div class="phase-label"><span class="phase-num">0</span> Giai đoạn 0: Khởi động &amp; Phê duyệt</div>
+            <div class="node" style="background:#5B2D8E;width:180px;" data-step="initiate" onclick="toggleStep('initiate')">
+              <span class="nlabel">Khởi tạo &amp; Triage</span>
+              <span class="nsub">PM/PO xác nhận scope</span>
+            </div>
+          </div>
+          <div class="arrow-down"><svg width="20" height="36"><line x1="10" y1="0" x2="10" y2="26" stroke="#6B7280" stroke-width="2"/><polygon points="5,26 15,26 10,34" fill="#6B7280"/></svg></div>
+
+          <!-- ZONE 2: BA — Discovery -->
+          <div id="lm2"></div>
+          <div style="height:110px;display:flex;align-items:center;">
+            <div class="node" style="background:#2E75B6;width:180px;" data-step="analyzing" onclick="toggleStep('analyzing')">
+              <span class="nlabel">Analyzing / Discovery</span>
+              <span class="nsub">BA viết tài liệu yêu cầu</span>
+            </div>
+          </div>
+          <div class="arrow-down"><svg width="20" height="36"><line x1="10" y1="0" x2="10" y2="26" stroke="#6B7280" stroke-width="2"/><polygon points="5,26 15,26 10,34" fill="#6B7280"/></svg></div>
+
+          <!-- ZONE 3: PM/PO — Phê duyệt 3 cấp + Diamond -->
+          <div id="lm3"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0;">
+            <div class="gate-badge" style="background:#5B2D8E;">
+              <span class="gate-num">1</span>
+              <span class="gate-label">Gate: Phê duyệt 3 cấp</span>
+            </div>
+            <div class="node" style="background:#3730A3;width:180px;" data-step="approval" onclick="toggleStep('approval')">
+              <span class="nlabel">Phê duyệt 3 cấp</span>
+              <span class="nsub">PO · PM/Dev Lead · CEO</span>
+            </div>
+            <div class="arrow-down" style="margin:2px 0;"><svg width="20" height="30"><line x1="10" y1="0" x2="10" y2="20" stroke="#6B7280" stroke-width="2"/><polygon points="5,20 15,20 10,28" fill="#6B7280"/></svg></div>
+
+            <!-- DIAMOND: Approved? -->
+            <div style="position:relative;display:flex;flex-direction:column;align-items:center;width:200px;">
+              <div class="diamond-wrap">
+                <div class="diamond-outer" style="width:90px;height:90px;background:#C55A11;">
+                  <div class="diamond-inner"><div class="dlabel">Approved?</div></div>
+                </div>
+              </div>
+              <!-- REJECT: absolute left -->
+              <div style="position:absolute;left:-138px;top:24px;display:flex;align-items:center;gap:4px;">
+                <div class="back-box">↩ Revise<span>Làm rõ lại</span></div>
+                <svg width="54" height="20"><line x1="54" y1="10" x2="8" y2="10" stroke="#C55A11" stroke-width="2" stroke-dasharray="4,2"/><polygon points="8,5 8,15 0,10" fill="#C55A11"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- APPROVED → continues -->
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="arrow-down">
+              <svg width="20" height="36"><line x1="10" y1="0" x2="10" y2="26" stroke="#1F7A4D" stroke-width="2"/><polygon points="5,26 15,26 10,34" fill="#1F7A4D"/></svg>
+              <span class="arrow-label" style="color:#1F7A4D;">✓ Approved</span>
+            </div>
+
+            <!-- ZONE 4: BA+DEV — Refining -->
+            <div id="lm4"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;">
+              <div class="phase-label"><span class="phase-num">1</span> Giai đoạn 1: Phát triển</div>
+              <div class="gate-badge" style="background:#2E75B6;">
+                <span class="gate-num">2</span>
+                <span class="gate-label">Gate: Ready for Dev</span>
+              </div>
+              <div class="node" style="background:#2E75B6;width:180px;" data-step="refining" onclick="toggleStep('refining')">
+                <span class="nlabel">Refining &amp; Sprint Planning</span>
+                <span class="nsub">Chia Stories · Estimate</span>
+              </div>
+            </div>
+            <div class="arrow-down"><svg width="20" height="36"><line x1="10" y1="0" x2="10" y2="26" stroke="#6B7280" stroke-width="2"/><polygon points="5,26 15,26 10,34" fill="#6B7280"/></svg></div>
+
+            <!-- ZONE 5: DEV — Multiple Sprints -->
+            <div id="lm5"></div>
+            <div style="height:130px;display:flex;align-items:center;">
+              <div class="sprint-banner" onclick="toggleStep('sprints')" style="cursor:pointer;">
+                <div class="sb-title">🔁 Sprint 1 → Sprint N</div>
+                <div class="sb-sub">Mỗi sprint 2 tuần<br>Theo Luồng 2 cho từng Story</div>
+                <div style="margin-top:8px;font-size:10px;color:#3730A3;font-weight:700;">Họp đồng bộ 2 tuần/lần · Báo cáo tuần</div>
+              </div>
+            </div>
+            <div class="arrow-down"><svg width="20" height="36"><line x1="10" y1="0" x2="10" y2="26" stroke="#6B7280" stroke-width="2"/><polygon points="5,26 15,26 10,34" fill="#6B7280"/></svg></div>
+
+            <!-- ZONE 6: QA/BA/User — UAT toàn diện -->
+            <div id="lm6"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;">
+              <div class="gate-badge" style="background:#1A7B8A;">
+                <span class="gate-num">3</span>
+                <span class="gate-label">Gate: UAT Toàn diện</span>
+              </div>
+              <div style="height:110px;display:flex;align-items:center;">
+                <div class="node" style="background:#1A7B8A;width:180px;" data-step="uat" onclick="toggleStep('uat')">
+                  <span class="nlabel">UAT Toàn diện</span>
+                  <span class="nsub">Nghiệm thu chính thức</span>
+                </div>
+              </div>
+              <div class="arrow-down" style="margin:2px 0;"><svg width="20" height="30"><line x1="10" y1="0" x2="10" y2="20" stroke="#6B7280" stroke-width="2"/><polygon points="5,20 15,20 10,28" fill="#6B7280"/></svg></div>
+
+              <!-- DIAMOND: Pass UAT? -->
+              <div style="position:relative;display:flex;flex-direction:column;align-items:center;width:200px;">
+                <div class="diamond-wrap">
+                  <div class="diamond-outer" style="width:80px;height:80px;background:#1A7B8A;">
+                    <div class="diamond-inner"><div class="dlabel">Pass UAT?</div></div>
+                  </div>
+                </div>
+                <!-- FAIL: absolute left -->
+                <div style="position:absolute;left:-118px;top:20px;display:flex;align-items:center;gap:4px;">
+                  <div class="reject-box" style="width:78px;">✗ FAIL<span>Dev fix lại</span></div>
+                  <svg width="54" height="20"><line x1="54" y1="10" x2="8" y2="10" stroke="#B22222" stroke-width="2" stroke-dasharray="4,2"/><polygon points="8,5 8,15 0,10" fill="#B22222"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- PASS UAT → RELEASE -->
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <div class="arrow-down">
+                <svg width="20" height="36"><line x1="10" y1="0" x2="10" y2="26" stroke="#1F7A4D" stroke-width="2"/><polygon points="5,26 15,26 10,34" fill="#1F7A4D"/></svg>
+                <span class="arrow-label" style="color:#1F7A4D;">✓ PASS</span>
+              </div>
+
+              <!-- ZONE 7: PM/DevOps — Release -->
+              <div id="lm7"></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;">
+                <div class="phase-label"><span class="phase-num">2</span> Giai đoạn 2: Bàn giao &amp; Phiên bản</div>
+                <div class="gate-badge" style="background:#C55A11;">
+                  <span class="gate-num">4</span>
+                  <span class="gate-label">Gate: CEO Phê duyệt Golive</span>
+                </div>
+                <div style="height:100px;display:flex;align-items:center;">
+                  <div class="node" style="background:#1F7A4D;width:180px;" data-step="release" onclick="toggleStep('release')">
+                    <span class="nlabel">🚀 Release Production</span>
+                    <span class="nsub">CEO ký duyệt · DevOps deploy</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="arrow-down"><svg width="20" height="36"><line x1="10" y1="0" x2="10" y2="26" stroke="#6B7280" stroke-width="2"/><polygon points="5,26 15,26 10,34" fill="#6B7280"/></svg></div>
+
+              <!-- ZONE 8: PM/BA/CEO — Bàn giao -->
+              <div id="lm8"></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0;">
+                <div style="height:90px;display:flex;align-items:center;">
+                  <div class="node" style="background:#5B2D8E;width:180px;" data-step="handover" onclick="toggleStep('handover_step')">
+                    <span class="nlabel">📦 Bàn giao &amp; Version Log</span>
+                    <span class="nsub">Tài liệu · Wiki · Training</span>
+                  </div>
+                </div>
+                <div class="arrow-down"><svg width="20" height="36"><line x1="10" y1="0" x2="10" y2="26" stroke="#6B7280" stroke-width="2"/><polygon points="5,26 15,26 10,34" fill="#6B7280"/></svg></div>
+                <div class="node" style="background:#1F7A4D;width:160px;" data-step="done" onclick="toggleStep('done')">
+                  <span class="nlabel">✅ Done</span>
+                  <span class="nsub">Monitor 1 tuần · Đóng Epic</span>
+                </div>
+              </div>
+
+            </div><!-- end PASS UAT -->
+          </div><!-- end APPROVED -->
+
+        </div><!-- end flow-col -->
+      </div><!-- end swimlane-wrap -->
+    </div><!-- end flow-card -->
+
+    <!-- DETAIL CARD -->
+    <div class="card detail-card" id="detailCard">
+      <div class="detail-empty" id="detailEmpty">
+        <div class="de-icon">🏗️</div>
+        <div class="de-title">Nhấn vào bước trên lưu đồ</div>
+        <div class="de-sub">để xem chi tiết trách nhiệm,<br>điều kiện và tài liệu bắt buộc</div>
+        <div class="step-list" id="stepList"></div>
+      </div>
+      <div class="detail-content" id="detailContent"></div>
+    </div>
+
+  </div><!-- end panel-flow -->
+
+
+  <!-- ══════════════════════════════════════
+       TAB: 3 GIAI ĐOẠN
+  ══════════════════════════════════════ -->
+  <div id="panel-phases" class="tab-panel">
+    <div class="card" style="width:100%;">
+      <div style="font-size:17px;font-weight:900;color:var(--navy);margin-bottom:6px;">📐 3 Giai đoạn của Luồng 3</div>
+      <div style="font-size:13px;color:var(--gray);margin-bottom:24px;">Luồng 3 có thêm Giai đoạn 0 (Khởi động) và Giai đoạn 2 (Bàn giao) mà Luồng 2 không có</div>
+
+      <div class="phases-grid">
+        <!-- Phase 0 -->
+        <div class="phase-card" style="border-color:#5B2D8E44;background:linear-gradient(160deg,#fff,#faf7ff);">
+          <div class="pc-badge" style="background:#5B2D8E;">
+            <span style="background:rgba(255,255,255,.2);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;">0</span>
+            Giai đoạn 0
+          </div>
+          <div class="pc-title">Khởi động &amp; Phê duyệt</div>
+          <div class="pc-duration" style="color:#5B2D8E;">⏱ 1–2 tuần</div>
+          <div class="pc-items">
+            <div class="pc-item"><div class="pc-dot" style="background:#5B2D8E;"></div>Đề xuất dự án, tạo Epic trên Jira</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#5B2D8E;"></div>BA Discovery: Viết tài liệu yêu cầu đầy đủ</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#5B2D8E;"></div>Dev Lead thiết kế giải pháp kỹ thuật</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#5B2D8E;"></div>Phê duyệt 3 cấp: PO → PM/Dev → CEO</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#5B2D8E;"></div>Chia Epic thành Stories/Tasks</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#5B2D8E;"></div>Estimate tổng thể và lên timeline</div>
+          </div>
+          <div class="pc-docs">
+            <div class="pc-docs-title">Tài liệu bắt buộc</div>
+            <span class="pc-doc-tag" style="background:#5B2D8E18;color:#5B2D8E;border:1px solid #5B2D8E33;">Tài liệu yêu cầu</span>
+            <span class="pc-doc-tag" style="background:#5B2D8E18;color:#5B2D8E;border:1px solid #5B2D8E33;">Solution Design</span>
+            <span class="pc-doc-tag" style="background:#5B2D8E18;color:#5B2D8E;border:1px solid #5B2D8E33;">Kiến trúc hệ thống</span>
+            <span class="pc-doc-tag" style="background:#5B2D8E18;color:#5B2D8E;border:1px solid #5B2D8E33;">CEO phê duyệt</span>
+          </div>
+        </div>
+
+        <!-- Phase 1 -->
+        <div class="phase-card" style="border-color:#3730A344;background:linear-gradient(160deg,#fff,#f5f3ff);">
+          <div class="pc-badge" style="background:#3730A3;">
+            <span style="background:rgba(255,255,255,.2);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;">1</span>
+            Giai đoạn 1
+          </div>
+          <div class="pc-title">Phát triển (N Sprint)</div>
+          <div class="pc-duration" style="color:#3730A3;">⏱ 1–3+ tháng · 2 tuần/sprint</div>
+          <div class="pc-items">
+            <div class="pc-item"><div class="pc-dot" style="background:#3730A3;"></div>Refining toàn bộ Stories trước sprint đầu</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#3730A3;"></div>Mỗi Sprint theo đúng Luồng 2</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#3730A3;"></div>Họp đồng bộ dự án 2 tuần/lần (nội bộ)</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#3730A3;"></div>Báo cáo tiến độ 1 tuần/lần lên Wiki</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#3730A3;"></div>Integration test liên tục giữa Stories</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#3730A3;"></div>Cập nhật CEO khi có thay đổi scope lớn</div>
+          </div>
+          <div class="pc-docs">
+            <div class="pc-docs-title">Sự kiện định kỳ</div>
+            <span class="pc-doc-tag" style="background:#3730A318;color:#3730A3;border:1px solid #3730A333;">Sprint Planning (2w)</span>
+            <span class="pc-doc-tag" style="background:#3730A318;color:#3730A3;border:1px solid #3730A333;">Đồng bộ dự án (2w)</span>
+            <span class="pc-doc-tag" style="background:#3730A318;color:#3730A3;border:1px solid #3730A333;">Báo cáo (1w)</span>
+            <span class="pc-doc-tag" style="background:#3730A318;color:#3730A3;border:1px solid #3730A333;">Demo Sprint</span>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="phase-card" style="border-color:#1F7A4D44;background:linear-gradient(160deg,#fff,#f0faf5);">
+          <div class="pc-badge" style="background:#1F7A4D;">
+            <span style="background:rgba(255,255,255,.2);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;">2</span>
+            Giai đoạn 2
+          </div>
+          <div class="pc-title">Bàn giao &amp; Quản lý Phiên bản</div>
+          <div class="pc-duration" style="color:#1F7A4D;">⏱ 1–2 tuần</div>
+          <div class="pc-items">
+            <div class="pc-item"><div class="pc-dot" style="background:#1F7A4D;"></div>UAT toàn diện với cty thành viên</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#1F7A4D;"></div>Họp nghiệm thu chính thức (biên bản)</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#1F7A4D;"></div>CEO ký Checklist Golive</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#1F7A4D;"></div>Deploy + Smoke Test + Monitor 1 tuần</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#1F7A4D;"></div>Bàn giao tài liệu đầy đủ cho user</div>
+            <div class="pc-item"><div class="pc-dot" style="background:#1F7A4D;"></div>Lưu Version Log trên Wiki</div>
+          </div>
+          <div class="pc-docs">
+            <div class="pc-docs-title">Tài liệu bàn giao</div>
+            <span class="pc-doc-tag" style="background:#1F7A4D18;color:#1F7A4D;border:1px solid #1F7A4D33;">Release Note</span>
+            <span class="pc-doc-tag" style="background:#1F7A4D18;color:#1F7A4D;border:1px solid #1F7A4D33;">Hướng dẫn sử dụng</span>
+            <span class="pc-doc-tag" style="background:#1F7A4D18;color:#1F7A4D;border:1px solid #1F7A4D33;">Version Log</span>
+            <span class="pc-doc-tag" style="background:#1F7A4D18;color:#1F7A4D;border:1px solid #1F7A4D33;">Biên bản nghiệm thu</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- So sánh 3 luồng -->
+      <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:12px;">🔄 So sánh 3 Luồng</div>
+      <table class="version-table">
+        <tr>
+          <th>Tiêu chí</th>
+          <th style="color:#ef4444;">Luồng 1 · Hotfix</th>
+          <th style="color:#2E75B6;">Luồng 2 · Issue thường</th>
+          <th style="color:#5B2D8E;">Luồng 3 · Dự án lớn</th>
+        </tr>
+        <tr>
+          <td><strong>Complexity</strong></td>
+          <td>S Critical</td>
+          <td>S – M</td>
+          <td>L – XL</td>
+        </tr>
+        <tr>
+          <td><strong>Thời gian</strong></td>
+          <td>Vài giờ – 1 ngày</td>
+          <td>2 tuần/sprint</td>
+          <td>1 – 3+ tháng</td>
+        </tr>
+        <tr>
+          <td><strong>UAT</strong></td>
+          <td>Smoke nhanh</td>
+          <td>Đầy đủ</td>
+          <td>Nghiệm thu chính thức</td>
+        </tr>
+        <tr>
+          <td><strong>Phê duyệt Golive</strong></td>
+          <td>PM (khẩn)</td>
+          <td>PM thường</td>
+          <td><span class="vbadge" style="background:#5B2D8E18;color:#5B2D8E;border:1px solid #5B2D8E33;">CEO ký</span></td>
+        </tr>
+        <tr>
+          <td><strong>Tài liệu</strong></td>
+          <td>Post-mortem</td>
+          <td>AC + Test case</td>
+          <td>Full package</td>
+        </tr>
+        <tr>
+          <td><strong>Báo cáo BLĐ</strong></td>
+          <td>Thông báo ngay</td>
+          <td>Báo cáo tuần</td>
+          <td>Báo cáo tuần + họp tháng</td>
+        </tr>
+        <tr>
+          <td><strong>Bàn giao Version</strong></td>
+          <td>Không</td>
+          <td>Release Note</td>
+          <td><span class="vbadge" style="background:#1F7A4D18;color:#1F7A4D;border:1px solid #1F7A4D33;">Full version log</span></td>
+        </tr>
+      </table>
+    </div>
+  </div><!-- end panel-phases -->
+
+
+  <!-- ══════════════════════════════════════
+       TAB: PHÊ DUYỆT
+  ══════════════════════════════════════ -->
+  <div id="panel-approval" class="tab-panel">
+    <div class="card" style="width:100%;">
+      <div class="appr-title">✅ Quy trình Phê duyệt 3 Cấp</div>
+      <div class="appr-sub">Luồng 3 có cấp phê duyệt chặt chẽ hơn vì ảnh hưởng lớn đến hệ thống và nhiều bên liên quan</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <!-- Approval flow -->
+        <div>
+          <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:16px;">📋 Luồng phê duyệt khởi động dự án</div>
+          <div class="appr-flow">
+            <div class="appr-step">
+              <div class="appr-left">
+                <div class="appr-circle" style="background:#2E75B6;">1</div>
+                <div class="appr-line" style="background:#2E75B6;"></div>
+              </div>
+              <div class="appr-body">
+                <div class="appr-step-title">PO + Đầu mối cty thành viên</div>
+                <div class="appr-step-who" style="color:#2E75B6;">Xác nhận yêu cầu nghiệp vụ</div>
+                <div class="appr-step-items">
+                  <div class="appr-step-item"><span style="color:#2E75B6;">•</span> Tài liệu yêu cầu phát triển đúng với nhu cầu</div>
+                  <div class="appr-step-item"><span style="color:#2E75B6;">•</span> Acceptance Criteria được xác nhận</div>
+                  <div class="appr-step-item"><span style="color:#2E75B6;">•</span> Business Impact được đánh giá đầy đủ</div>
+                </div>
+                <div class="appr-confirm" style="background:#2E75B618;color:#2E75B6;border:1px solid #2E75B633;">✉️ Email xác nhận từ cả 2 phía</div>
+              </div>
+            </div>
+            <div class="appr-step">
+              <div class="appr-left">
+                <div class="appr-circle" style="background:#3730A3;">2</div>
+                <div class="appr-line" style="background:#3730A3;"></div>
+              </div>
+              <div class="appr-body">
+                <div class="appr-step-title">PM / Dev Lead</div>
+                <div class="appr-step-who" style="color:#3730A3;">Xác nhận giải pháp kỹ thuật</div>
+                <div class="appr-step-items">
+                  <div class="appr-step-item"><span style="color:#3730A3;">•</span> Solution Design khả thi</div>
+                  <div class="appr-step-item"><span style="color:#3730A3;">•</span> Estimate timeline hợp lý</div>
+                  <div class="appr-step-item"><span style="color:#3730A3;">•</span> Resource đã cân đối</div>
+                  <div class="appr-step-item"><span style="color:#3730A3;">•</span> Technical risk đã được đánh giá</div>
+                </div>
+                <div class="appr-confirm" style="background:#3730A318;color:#3730A3;border:1px solid #3730A333;">📋 Ký trên tài liệu giải pháp</div>
+              </div>
+            </div>
+            <div class="appr-step">
+              <div class="appr-left">
+                <div class="appr-circle" style="background:#5B2D8E;">3</div>
+              </div>
+              <div class="appr-body">
+                <div class="appr-step-title">CEO / Deputy CEO</div>
+                <div class="appr-step-who" style="color:#5B2D8E;">Phê duyệt kiến trúc hệ thống &amp; Golive</div>
+                <div class="appr-step-items">
+                  <div class="appr-step-item"><span style="color:#5B2D8E;">•</span> Phê duyệt tài liệu kiến trúc hệ thống</div>
+                  <div class="appr-step-item"><span style="color:#5B2D8E;">•</span> Ký Checklist Golive trước khi release</div>
+                  <div class="appr-step-item"><span style="color:#5B2D8E;">•</span> Nhận báo cáo tiến độ 1 tuần/lần</div>
+                  <div class="appr-step-item"><span style="color:#5B2D8E;">•</span> Quyết định nếu có thay đổi scope lớn</div>
+                </div>
+                <div class="appr-confirm" style="background:#5B2D8E18;color:#5B2D8E;border:1px solid #5B2D8E33;">🔏 Ký tay hoặc email chính thức</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Golive checklist -->
+        <div>
+          <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:16px;">🚀 Checklist Golive Dự án (CEO ký)</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            {[
+              ['Toàn bộ Stories đã PASS Testing + UAT', 'QA/BA'],
+              ['Biên bản nghiệm thu chính thức đã ký', 'PO + Đại diện cty'],
+              ['Tài liệu BA, Dev, QA đầy đủ trên Wiki', 'BA'],
+              ['Release Note và Hướng dẫn sử dụng hoàn chỉnh', 'BA'],
+              ['Deployment Plan đã chuẩn bị', 'DevOps'],
+              ['Rollback Plan đã verify', 'DevOps + Dev'],
+              ['DB migration script đã review và test', 'Dev Lead'],
+              ['Integration test toàn bộ module liên quan', 'QA'],
+              ['Performance test với data thực tế (nếu cần)', 'Dev + QA'],
+              ['Không còn issue Blocker hoặc Critical', 'PM'],
+              ['CEO phê duyệt và ký Checklist này', 'CEO'],
+            ].map((r, i) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;background:${i%2===0?'#F0F0F8':'#fff'};border-radius:6px;padding:8px 12px;border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:8px;flex:1;">
+                <span style="background:${i===10?'#5B2D8E':'#3730A3'};color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;">${i+1}</span>
+                <span style="font-size:12px;color:#374151;">${r[0]}</span>
+              </div>
+              <span style="background:#E0E7FF;color:#3730A3;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:8px;">${r[1]}</span>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- end panel-approval -->
+
+
+  <!-- ══════════════════════════════════════
+       TAB: BÀN GIAO & PHIÊN BẢN
+  ══════════════════════════════════════ -->
+  <div id="panel-handover" class="tab-panel">
+    <div class="card" style="width:100%;">
+      <div class="ho-title">📦 Bàn giao &amp; Quản lý Phiên bản</div>
+      <div class="ho-sub">Giai đoạn 2 của Luồng 3 — Bàn giao toàn diện cho cty thành viên và lưu trữ version</div>
+
+      <div class="ho-grid">
+        <!-- Tài liệu bàn giao -->
+        <div class="ho-section" style="border-color:#3730A344;">
+          <div class="ho-section-title" style="color:#3730A3;">📋 Gói tài liệu bàn giao</div>
+          <div class="ho-item"><div class="ho-icon" style="background:#2E75B6;">BA</div><div class="ho-text"><strong>Tài liệu nghiệp vụ:</strong> Mô tả yêu cầu, Flow xử lý, Acceptance Criteria, Hướng dẫn sử dụng cho user</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1E3A5F;">Dev</div><div class="ho-text"><strong>Tài liệu kỹ thuật:</strong> Solution design, API docs, DB schema thay đổi, Impact analysis, Deployment guide</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1A7B8A;">QA</div><div class="ho-text"><strong>Tài liệu nghiệm thu:</strong> Test case, Kết quả UAT, Biên bản nghiệm thu có chữ ký</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1F7A4D;">PM</div><div class="ho-text"><strong>Release package:</strong> Release Note, Deployment log, Rollback history, Version changelog</div></div>
+        </div>
+
+        <!-- Quản lý phiên bản -->
+        <div class="ho-section" style="border-color:#1F7A4D44;">
+          <div class="ho-section-title" style="color:#1F7A4D;">🏷️ Quản lý Phiên bản (Version Log)</div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1F7A4D;">v</div><div class="ho-text"><strong>Đặt tên version:</strong> v{Major}.{Minor}.{Patch} — Ví dụ v2.1.0 (Major feature), v2.1.1 (Hotfix)</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#5B2D8E;">W</div><div class="ho-text"><strong>Lưu trữ trên Wiki:</strong> Mỗi version có 1 trang riêng gồm changelog, tài liệu, link Jira Epic</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#C55A11;">🔔</div><div class="ho-text"><strong>Thông báo version mới:</strong> Email chính thức gửi cty thành viên kèm Release Note và hướng dẫn upgrade</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#3730A3;">🗃️</div><div class="ho-text"><strong>Lưu trữ artifacts:</strong> Build artifacts, DB scripts lưu trên repo có tag version tương ứng</div></div>
+        </div>
+
+        <!-- Quy trình nghiệm thu -->
+        <div class="ho-section" style="border-color:#1A7B8A44;">
+          <div class="ho-section-title" style="color:#1A7B8A;">🤝 Quy trình Nghiệm thu chính thức</div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1A7B8A;">1</div><div class="ho-text">Bàn giao môi trường UAT đầy đủ dữ liệu thực tế cho cty thành viên</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1A7B8A;">2</div><div class="ho-text">Cty thành viên test trong 3–5 ngày làm việc theo test script được cung cấp</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1A7B8A;">3</div><div class="ho-text">Họp nghiệm thu: BoltX + Đại diện cty trình bày kết quả, xử lý feedback</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1A7B8A;">4</div><div class="ho-text">Ký biên bản nghiệm thu (cả 2 phía), attach vào Jira Epic</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1A7B8A;">5</div><div class="ho-text">CEO BoltX ký Checklist Golive → DevOps deploy Production</div></div>
+        </div>
+
+        <!-- Monitor sau release -->
+        <div class="ho-section" style="border-color:#C55A1144;">
+          <div class="ho-section-title" style="color:#C55A11;">📡 Monitor sau Release dự án</div>
+          <div class="ho-item"><div class="ho-icon" style="background:#C55A11;">1h</div><div class="ho-text"><strong>1 giờ đầu:</strong> Smoke test toàn bộ tính năng chính trên PROD, kiểm tra log</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#C55A11;">24h</div><div class="ho-text"><strong>24 giờ đầu:</strong> Monitor error rate, response time, DB load — alert ngay nếu bất thường</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#C55A11;">1w</div><div class="ho-text"><strong>1 tuần đầu:</strong> Daily check dashboard, CX thu thập feedback user, PM tổng hợp issues phát sinh</div></div>
+          <div class="ho-item"><div class="ho-icon" style="background:#1F7A4D;">✅</div><div class="ho-text"><strong>Sau 1 tuần:</strong> PM xác nhận ổn định → Đóng Epic trên Jira → Lưu Version Log final lên Wiki</div></div>
+        </div>
+      </div>
+
+      <!-- Version log table -->
+      <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:12px;">📊 Mẫu Version Log (lưu trên Wiki)</div>
+      <table class="version-table">
+        <tr>
+          <th>Version</th>
+          <th>Ngày Release</th>
+          <th>Loại</th>
+          <th>Nội dung chính</th>
+          <th>Jira Epic</th>
+          <th>Trạng thái</th>
+        </tr>
+        <tr>
+          <td><strong>v2.1.0</strong></td>
+          <td>dd/mm/yyyy</td>
+          <td><span class="vbadge" style="background:#5B2D8E18;color:#5B2D8E;border:1px solid #5B2D8E33;">Major</span></td>
+          <td>Tên feature / module mới</td>
+          <td><a style="color:#3730A3;font-weight:600;">EPIC-XXX</a></td>
+          <td><span class="vbadge" style="background:var(--lgreen);color:var(--green);border:1px solid #1F7A4D33;">✓ Stable</span></td>
+        </tr>
+        <tr>
+          <td><strong>v2.1.1</strong></td>
+          <td>dd/mm/yyyy</td>
+          <td><span class="vbadge" style="background:#B2222218;color:#B22222;border:1px solid #B2222233;">Hotfix</span></td>
+          <td>Fix lỗi phát sinh sau v2.1.0</td>
+          <td><a style="color:#3730A3;font-weight:600;">HOT-XXX</a></td>
+          <td><span class="vbadge" style="background:var(--lgreen);color:var(--green);border:1px solid #1F7A4D33;">✓ Stable</span></td>
+        </tr>
+        <tr>
+          <td><strong>v2.2.0</strong></td>
+          <td>dd/mm/yyyy</td>
+          <td><span class="vbadge" style="background:#2E75B618;color:#2E75B6;border:1px solid #2E75B633;">Minor</span></td>
+          <td>Cải tiến / improvement batch</td>
+          <td><a style="color:#3730A3;font-weight:600;">EPIC-XXX</a></td>
+          <td><span class="vbadge" style="background:var(--lorange);color:var(--orange);border:1px solid #C55A1133;">⚠ In Progress</span></td>
+        </tr>
+      </table>
+    </div>
+  </div><!-- end panel-handover -->
+
+</div><!-- end body-wrap -->
+
+<!-- LEGEND -->
+<div class="legend" id="legend">
+  <div class="legend-item"><div class="leg-solid" style="background:#1F7A4D;"></div> Luồng đi tiếp (PASS)</div>
+  <div class="legend-item"><div class="leg-dashed" style="border-color:#B22222;"></div> Luồng trả lại (FAIL)</div>
+  <div class="legend-item"><div class="leg-dot" style="background:#C55A11;"></div> Quality Gate</div>
+  <div class="legend-item"><div class="leg-dot" style="background:#5B2D8E;"></div> Phê duyệt CEO bắt buộc</div>
+  <div class="legend-item"><span>👆</span> Nhấn vào node để xem chi tiết</div>
+</div>
+
+<script>
+// ── TABS ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    document.getElementById('legend').style.display = btn.dataset.tab === 'flow' ? '' : 'none';
+  });
+});
+
+// ── STEP DATA ──
+const STEPS = {
+  initiate: {
+    title: 'Khởi tạo & Triage',
+    role: 'PM / PO',
+    color: '#5B2D8E',
+    items: [
+      'Tạo Epic trên Jira, điền đầy đủ thông tin ban đầu',
+      'BA/PM xác nhận: Issue thuộc Luồng 3 (Complexity L/XL)',
+      'Gán BA Owner, PM Owner, Product Owner',
+      'Xác định sơ bộ: Scope, Business Impact, hệ thống bị ảnh hưởng',
+      'Thông báo CEO/Deputy về dự án mới sắp khởi động',
+    ],
+    docs: ['Jira Epic (New)', 'Sơ bộ scope + Business Impact'],
+  },
+  analyzing: {
+    title: 'Analyzing / Discovery',
+    role: 'BA',
+    color: '#2E75B6',
+    info: 'Giai đoạn này chỉ có ở Luồng 3. Luồng 1 và 2 không có bước Discovery dài.',
+    items: [
+      'BA nghiên cứu yêu cầu nghiệp vụ chi tiết với cty thành viên',
+      'Viết tài liệu yêu cầu đầy đủ: As-Is, To-Be, Business Rules',
+      'Xác định và phân tích các luồng nghiệp vụ (flow diagram)',
+      'Viết Acceptance Criteria cho toàn bộ Epic',
+      'Dev Lead tham gia thiết kế Solution và kiến trúc hệ thống',
+      'Estimate effort tổng thể và chia nhỏ thành Stories/Tasks',
+    ],
+    docs: ['Tài liệu yêu cầu (Business Requirements)', 'Solution Design', 'Kiến trúc hệ thống', 'Rough estimate'],
+  },
+  approval: {
+    title: 'Phê duyệt 3 cấp',
+    role: 'PO → PM/Dev Lead → CEO',
+    color: '#3730A3',
+    info: 'Bắt buộc đủ 3 cấp phê duyệt trước khi bắt đầu phát triển.',
+    items: [
+      'Cấp 1 — PO + Cty thành viên: Xác nhận tài liệu yêu cầu đúng nhu cầu',
+      'Cấp 2 — PM + Dev Lead: Xác nhận giải pháp kỹ thuật khả thi, estimate hợp lý',
+      'Cấp 3 — CEO: Phê duyệt kiến trúc hệ thống và chính thức kick-off dự án',
+      'Nếu REJECT: BA cập nhật lại tài liệu theo góp ý → Phê duyệt lại',
+    ],
+    docs: ['Email xác nhận từ cty thành viên', 'Tài liệu Solution được ký', 'CEO phê duyệt kiến trúc'],
+    gate: { num: 1, label: 'Phê duyệt 3 cấp' },
+  },
+  refining: {
+    title: 'Refining & Sprint Planning',
+    role: 'BA + Dev',
+    color: '#2E75B6',
+    items: [
+      'Chia Epic thành Stories có thể deliver độc lập (mỗi Story theo Luồng 2)',
+      'Refining từng Story: AC rõ ràng, scope confirmed, estimate',
+      'Sprint Planning: Chọn Stories cho Sprint 1',
+      'Xác định thứ tự ưu tiên dựa vào dependency kỹ thuật',
+      'Thiết lập Definition of Done cho toàn bộ dự án',
+    ],
+    docs: ['Story list với AC', 'Sprint 1 backlog', 'Dependency map'],
+    gate: { num: 2, label: 'Ready for Dev' },
+  },
+  sprints: {
+    title: 'Sprint 1 → Sprint N (Phát triển)',
+    role: 'Dev + BA + QA',
+    color: '#3730A3',
+    info: 'Mỗi sprint trong Luồng 3 theo đúng Luồng 2. Thêm các sự kiện đặc thù của dự án.',
+    items: [
+      'Mỗi Story/Task thực hiện theo Luồng 2: Refine → Dev → Test → Release',
+      'Họp đồng bộ dự án 2 tuần/lần: Tiến độ, blocker, risk mới',
+      'Báo cáo tiến độ 1 tuần/lần: PM gửi lên Wiki + email BLĐ',
+      'Demo cuối mỗi sprint cho PO và đại diện cty thành viên',
+      'Integration test liên tục giữa các Story khi hoàn thành',
+      'Escalate lên CEO nếu phát sinh thay đổi scope lớn',
+    ],
+    docs: ['Sprint backlog', 'Demo recordings', 'Weekly progress report', 'Risk log'],
+  },
+  uat: {
+    title: 'UAT Toàn diện',
+    role: 'QA / BA / Cty thành viên',
+    color: '#1A7B8A',
+    items: [
+      'Bàn giao toàn bộ môi trường UAT với dữ liệu thực tế đầy đủ',
+      'Cty thành viên test trong 3–5 ngày theo test script chuẩn bị sẵn',
+      'QA/BA hỗ trợ, giải đáp thắc mắc trong quá trình UAT',
+      'Bug FAIL: Phân loại Critical/Minor → Dev fix → UAT lại',
+      'Họp nghiệm thu chính thức: Trình bày kết quả, thu thập feedback',
+      'Ký biên bản nghiệm thu khi không còn issue Critical',
+    ],
+    docs: ['Test script đầy đủ', 'UAT results report', 'Biên bản nghiệm thu (2 chữ ký)'],
+    gate: { num: 3, label: 'UAT Toàn diện' },
+  },
+  release: {
+    title: 'Release Production',
+    role: 'PM / DevOps',
+    color: '#1F7A4D',
+    items: [
+      'CEO ký Checklist Golive (11 hạng mục)',
+      'DevOps deploy theo Deployment Plan đã chuẩn bị',
+      'Smoke Test toàn bộ tính năng chính ngay sau deploy',
+      'Rollback ngay nếu phát hiện vấn đề nghiêm trọng',
+      'Monitor chặt trong 1h đầu: Error rate, response time, log',
+    ],
+    docs: ['Checklist Golive có chữ ký CEO', 'Deployment log', 'Smoke Test result'],
+    gate: { num: 4, label: 'CEO Phê duyệt Golive' },
+  },
+  handover_step: {
+    title: 'Bàn giao & Version Log',
+    role: 'PM / BA',
+    color: '#5B2D8E',
+    items: [
+      'Gửi gói tài liệu bàn giao đầy đủ cho cty thành viên (BA + Dev + QA docs)',
+      'Training/Hướng dẫn sử dụng cho user cuối (nếu cần)',
+      'Tạo trang Version Log mới trên Wiki: Changelog, tài liệu, link Jira',
+      'Gửi email thông báo version mới cho stakeholder',
+      'CX/PTSP xác nhận với user đã nhận bàn giao',
+    ],
+    docs: ['Gói tài liệu bàn giao', 'Version Log trên Wiki', 'Release Note gửi email'],
+  },
+  done: {
+    title: 'Done — Đóng Epic',
+    role: 'PM',
+    color: '#1F7A4D',
+    items: [
+      'Monitor 1 tuần: Daily check dashboard, thu thập feedback user',
+      'Tổng hợp issues phát sinh sau release vào Luồng 1 hoặc 2',
+      'PM xác nhận ổn định → Đóng Epic trên Jira',
+      'Cập nhật Version Log final trên Wiki',
+      'Retrospective dự án: Điều gì tốt, điều gì cần cải thiện',
+      'Archive tài liệu dự án trên Wiki',
+    ],
+    docs: ['Jira Epic closed', 'Version Log final', 'Retrospective notes'],
+  },
+};
+
+// Build step list
+const stepListEl = document.getElementById('stepList');
+Object.entries(STEPS).forEach(([key, s]) => {
+  const el = document.createElement('div');
+  el.className = 'step-list-item';
+  el.style.borderLeftColor = s.color;
+  el.innerHTML = `<div><div class="sli-title">${s.title}</div><div class="sli-role">${s.role}</div></div><span style="color:var(--gray);font-size:16px;">›</span>`;
+  el.addEventListener('click', () => toggleStep(key));
+  stepListEl.appendChild(el);
+});
+
+// Toggle detail
+let activeStep = null;
+function toggleStep(key) {
+  if (activeStep === key) { activeStep = null; showEmpty(); unhighlightAll(); }
+  else { activeStep = key; showDetail(key); highlightNode(key); }
+}
+function unhighlightAll() {
+  document.querySelectorAll('.node[data-step]').forEach(n => { n.classList.remove('active'); n.style.boxShadow = ''; });
+}
+function highlightNode(key) {
+  unhighlightAll();
+  const el = document.querySelector(`.node[data-step="${key}"]`);
+  if (el) { el.classList.add('active'); el.style.boxShadow = `0 0 0 3px ${STEPS[key].color}, 0 4px 16px rgba(0,0,0,0.2)`; }
+}
+function showEmpty() {
+  document.getElementById('detailEmpty').style.display = '';
+  document.getElementById('detailContent').style.display = 'none';
+  document.getElementById('detailContent').classList.remove('active');
+}
+function showDetail(key) {
+  const s = STEPS[key];
+  const dc = document.getElementById('detailContent');
+  const infoHTML = s.info ? `<div class="info-box" style="background:${s.color}0D;border-color:${s.color}44;color:${s.color};">💡 ${s.info}</div>` : '';
+  const gateHTML = s.gate ? `<div style="margin-bottom:16px;"><div class="gate-badge" style="background:${s.color};"><span class="gate-num">${s.gate.num}</span><span class="gate-label">Gate ${s.gate.num}: ${s.gate.label}</span></div><div class="gate-note">Điểm kiểm soát — phải đạt trước khi chuyển bước tiếp theo</div></div>` : '';
+  const activitiesHTML = s.items.map((item, i) => `<div class="activity-item"><span class="act-num" style="background:${s.color};">${i+1}</span><span class="act-text">${item}</span></div>`).join('');
+  const docsHTML = s.docs.map(d => `<span class="doc-tag" style="background:${s.color}18;border:1px solid ${s.color}44;color:${s.color};">📋 ${d}</span>`).join('');
+  dc.innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="detail-title" style="color:${s.color};">${s.title}</div>
+        <span class="role-tag" style="background:${s.color}22;border:1px solid ${s.color}55;color:${s.color};">${s.role}</span>
+      </div>
+      <button class="close-btn" onclick="toggleStep('${key}')">×</button>
+    </div>
+    ${infoHTML}${gateHTML}
+    <div class="section-label">Hoạt động chính</div>
+    <div class="activity-list">${activitiesHTML}</div>
+    <div class="section-label">Dữ liệu / Tài liệu bắt buộc</div>
+    <div class="doc-list">${docsHTML}</div>`;
+  document.getElementById('detailEmpty').style.display = 'none';
+  dc.style.display = 'block';
+  dc.classList.add('active');
+}
+showEmpty();
+
+// Sync swimlane heights
+function syncSwimLanes() {
+  const fc = document.querySelector('.flow-col');
+  if (!fc) return;
+  const fcTop  = fc.getBoundingClientRect().top;
+  const ids    = ['lm0','lm1','lm2','lm3','lm4','lm5','lm6','lm7','lm8'];
+  const roles  = ['role0','role1','role2','role3','role4','role5','role6','role7','role8'];
+  const tops   = ids.map(id => { const el = document.getElementById(id); return el ? el.getBoundingClientRect().top - fcTop : null; });
+  const totalH = fc.getBoundingClientRect().height;
+  roles.forEach((rid, i) => {
+    const top     = tops[i];
+    const nextTop = (i+1 < tops.length && tops[i+1] !== null) ? tops[i+1] : totalH;
+    if (top === null) return;
+    const el = document.getElementById(rid);
+    if (el) el.style.height = Math.max(nextTop - top, 32) + 'px';
+  });
+}
+requestAnimationFrame(() => requestAnimationFrame(syncSwimLanes));
+window.addEventListener('resize', syncSwimLanes);
+
+// Build approval checklist dynamically
+const checkItems = [
+  ['Toàn bộ Stories đã PASS Testing + UAT', 'QA/BA'],
+  ['Biên bản nghiệm thu chính thức đã ký', 'PO + Đại diện cty'],
+  ['Tài liệu BA, Dev, QA đầy đủ trên Wiki', 'BA'],
+  ['Release Note và Hướng dẫn sử dụng hoàn chỉnh', 'BA'],
+  ['Deployment Plan đã chuẩn bị', 'DevOps'],
+  ['Rollback Plan đã verify', 'DevOps + Dev'],
+  ['DB migration script đã review và test', 'Dev Lead'],
+  ['Integration test toàn bộ module liên quan', 'QA'],
+  ['Performance test với data thực tế (nếu cần)', 'Dev + QA'],
+  ['Không còn issue Blocker hoặc Critical', 'PM'],
+  ['CEO phê duyệt và ký Checklist này', 'CEO'],
+];
+const approvalTab = document.getElementById('panel-approval');
+if (approvalTab) {
+  const placeholder = approvalTab.querySelector('.appr-flow');
+  if (placeholder) {
+    const container = placeholder.closest('.card').querySelector('[style*="flex-direction:column;gap:6px"]');
+    if (container) {
+      container.innerHTML = checkItems.map((r, i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:${i%2===0?'#F0F0F8':'#fff'};border-radius:6px;padding:8px 12px;border:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;">
+            <span style="background:${i===10?'#5B2D8E':'#3730A3'};color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;">${i+1}</span>
+            <span style="font-size:12px;color:#374151;">${r[0]}</span>
+          </div>
+          <span style="background:#E0E7FF;color:#3730A3;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:8px;">${r[1]}</span>
+        </div>`).join('');
+    }
+  }
+}
+</script>
+</body>
+</html>

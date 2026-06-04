@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BoltX — Quy Trình Quản Lý Issue Luồng 2</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:   #1E3A5F;
+    --blue:   #2E75B6;
+    --teal:   #1A7B8A;
+    --green:  #1F7A4D;
+    --orange: #C55A11;
+    --red:    #B22222;
+    --gray:   #6B7280;
+    --lblue:  #D6E4F0;
+    --lgreen: #D9EAD3;
+    --lorange:#FCE4D6;
+    --lred:   #FDECEA;
+    --bg:     #EEF2F7;
+    --card:   #F0F4F8;
+    --border: #CBD5E1;
+  }
+  body {
+    font-family: 'Be Vietnam Pro', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    color: #1a1a1a;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(120deg, #1E3A5F 0%, #2a5298 100%);
+    padding: 22px 32px 18px;
+    color: #fff;
+  }
+  .header-eyebrow { font-size: 10px; opacity:.7; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; }
+  .header-title   { font-size: 22px; font-weight:900; letter-spacing:-.5px; }
+  .header-sub     { font-size: 13px; opacity:.8; margin-top:4px; }
+  .tabs { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+  .tab-btn {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .tab-btn:hover  { background: rgba(255,255,255,.15); }
+  .tab-btn.active { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.6); font-weight:800; }
+
+  /* ── LAYOUT ── */
+  .body-wrap { padding: 24px 28px; width:100%; }
+  .card { background:#fff; border-radius:14px; padding:24px; box-shadow:0 2px 16px rgba(0,0,0,.08); }
+
+  /* ── TAB PANELS ── */
+  .tab-panel { display:none; }
+  .tab-panel.active { display:flex; gap:20px; width:100%; align-items:flex-start; overflow-x:auto; }
+
+  /* ─────────────────────────────────────────
+     FLOW TAB
+  ───────────────────────────────────────── */
+  #panel-flow { flex-wrap: nowrap; }
+  .flow-card { flex: 0 0 560px; width:560px; }
+  .detail-card { flex:1; min-width:0; overflow:hidden; }
+
+  .hint-badge {
+    background: var(--lblue);
+    border-radius:6px;
+    padding:3px 10px;
+    font-size:11px;
+    color:var(--navy);
+    font-weight:700;
+    display:inline-block;
+    margin-bottom:20px;
+  }
+
+  /* swimlane */
+  .swimlane-wrap { display:flex; gap:0; }
+  .role-col { width:90px; flex-shrink:0; display:flex; flex-direction:column; }
+  .role-cell {
+    display:flex; align-items:center; justify-content:flex-end;
+    padding-right:10px;
+    border-right:3px solid;
+    font-size:9.5px; font-weight:700; text-align:right; line-height:1.3;
+  }
+  .flow-col { flex:1; display:flex; flex-direction:column; align-items:center; padding-left:16px; }
+
+  /* nodes */
+  .node {
+    border-radius:10px;
+    padding:10px 14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+    transition:transform .18s, box-shadow .18s;
+    user-select:none;
+    text-align:center;
+  }
+  .node:hover { transform:scale(1.04); box-shadow:0 4px 14px rgba(0,0,0,.18); }
+  .node.active { transform:scale(1.06); }
+  .node .nlabel { color:#fff; font-weight:700; font-size:12.5px; line-height:1.3; }
+  .node .nsub   { color:#fff; opacity:.82; font-size:10.5px; margin-top:2px; }
+
+  .node-start {
+    background:var(--orange);
+    border-radius:30px;
+    padding:8px 22px;
+    color:#fff; font-weight:900; font-size:13px;
+    box-shadow:0 2px 10px rgba(197,90,17,.35);
+    user-select:none;
+  }
+  .node-done {
+    border-radius:10px;
+    padding:10px 14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer;
+    text-align:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+    transition:transform .18s;
+  }
+  .node-done:hover { transform:scale(1.04); }
+
+  /* diamond */
+  .diamond-wrap { display:flex; flex-direction:column; align-items:center; }
+  .diamond-outer {
+    transform:rotate(45deg);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.10);
+    transition:box-shadow .18s;
+  }
+  .diamond-inner { transform:rotate(-45deg); text-align:center; padding:6px; }
+  .diamond-inner .dlabel { color:#fff; font-weight:700; font-size:11.5px; line-height:1.3; }
+
+  /* gate badge */
+  .gate-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    border-radius:20px; padding:5px 12px;
+    box-shadow:0 2px 6px rgba(0,0,0,.13);
+    margin-bottom:6px;
+  }
+  .gate-num {
+    background:rgba(255,255,255,.22); border-radius:50%;
+    width:20px; height:20px;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:11px; color:#fff;
+  }
+  .gate-label { color:#fff; font-weight:700; font-size:11px; }
+
+  /* arrows */
+  .arrow-down { display:flex; flex-direction:column; align-items:center; }
+  .arrow-down svg { flex-shrink:0; }
+  .arrow-label { font-size:10px; font-weight:700; }
+
+  /* branch row */
+  .branch-row { display:flex; align-items:flex-start; gap:24px; margin-top:4px; }
+  .reject-box {
+    background:var(--lred);
+    border:1px solid rgba(178,34,34,.35);
+    border-radius:8px; padding:6px 10px;
+    font-size:10.5px; color:var(--red); font-weight:700;
+    text-align:center; width:90px;
+  }
+  .reject-box span { font-weight:400; display:block; }
+
+  /* detail panel */
+  .detail-empty {
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    gap:10px; text-align:center; padding:16px 8px;
+  }
+  .detail-empty .de-icon { font-size:40px; }
+  .detail-empty .de-title { font-weight:800; color:var(--navy); font-size:16px; }
+  .detail-empty .de-sub   { color:var(--gray); font-size:13px; line-height:1.6; }
+  .step-list { width:100%; margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+  .step-list-item {
+    background:var(--card); border-left:4px solid; border-radius:8px;
+    padding:8px 14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:space-between;
+    transition:background .15s; text-align:left;
+  }
+  .step-list-item:hover { background:#e2e8f0; }
+  .sli-title { font-weight:700; font-size:12.5px; color:var(--navy); }
+  .sli-role  { font-size:11px; color:var(--gray); margin-top:1px; }
+  .sli-arrow { color:var(--gray); font-size:16px; }
+
+  .detail-content { display:none; }
+  .detail-content.active { display:block; }
+  .detail-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; }
+  .detail-title { font-size:18px; font-weight:900; margin-bottom:4px; }
+  .close-btn {
+    background:var(--card); border:none; border-radius:6px;
+    padding:4px 10px; cursor:pointer; font-size:18px; color:var(--gray);
+    font-family:inherit; line-height:1; flex-shrink:0;
+  }
+  .role-tag {
+    display:inline-block; border-radius:4px; padding:2px 7px;
+    font-size:10px; font-weight:800;
+  }
+  .section-label {
+    font-size:11px; font-weight:800; color:var(--navy);
+    text-transform:uppercase; letter-spacing:.5px;
+    margin-bottom:8px; margin-top:18px;
+  }
+  .activity-list { display:flex; flex-direction:column; gap:6px; }
+  .activity-item { display:flex; gap:10px; align-items:flex-start; }
+  .act-num {
+    width:20px; height:20px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:900; color:#fff; flex-shrink:0; margin-top:1px;
+  }
+  .act-text { font-size:13px; color:#374151; line-height:1.5; }
+  .doc-list { display:flex; flex-wrap:wrap; gap:6px; }
+  .doc-tag {
+    border-radius:6px; padding:4px 10px;
+    font-size:12px; font-weight:700;
+  }
+  .gate-note { font-size:11px; color:var(--gray); margin-top:6px; }
+
+  /* ─────────────────────────────────────────
+     SPRINT TAB
+  ───────────────────────────────────────── */
+  #panel-sprint { flex-direction:column; }
+  #panel-sprint .card { width:100%; }
+  .sprint-tab-title { font-size:17px; font-weight:900; color:var(--navy); margin-bottom:6px; }
+  .sprint-tab-sub   { font-size:13px; color:var(--gray); margin-bottom:24px; }
+  .week-label {
+    display:inline-block; border-radius:8px; padding:6px 16px;
+    color:#fff; font-weight:900; font-size:13px; margin-bottom:12px;
+  }
+  .days-row { display:flex; gap:12px; }
+  .day-col { flex:1; min-width:0; }
+  .day-header { font-weight:700; font-size:12px; color:var(--gray); margin-bottom:6px; text-align:center; }
+  .day-event {
+    border-radius:10px; padding:10px 12px; border:2px solid;
+  }
+  .day-event .ev-title { font-weight:700; font-size:12px; margin-bottom:4px; }
+  .day-event .ev-who   { font-size:10.5px; font-weight:700; color:var(--navy); margin-bottom:3px; }
+  .day-event .ev-note  { font-size:10.5px; color:var(--gray); line-height:1.4; }
+  .recurring-box { background:var(--card); border-radius:10px; padding:18px; margin-top:16px; }
+  .recurring-title { font-weight:900; font-size:13px; color:var(--navy); margin-bottom:12px; }
+  .recurring-row { display:flex; gap:12px; }
+  .recurring-item { flex:1; background:#fff; border-left:4px solid; border-radius:8px; padding:10px 14px; }
+  .ri-day   { font-size:10px; font-weight:800; margin-bottom:3px; }
+  .ri-title { font-weight:800; font-size:12px; color:var(--navy); margin-bottom:4px; }
+  .ri-who   { font-size:11px; color:var(--gray); }
+
+  /* ─────────────────────────────────────────
+     MEETING TAB
+  ───────────────────────────────────────── */
+  #panel-meeting { flex-direction:column; }
+  #panel-meeting .card { width:100%; }
+  .mtg-title { font-size:17px; font-weight:900; color:var(--navy); margin-bottom:6px; }
+  .mtg-sub   { font-size:13px; color:var(--gray); margin-bottom:24px; }
+  .prep-row  { display:flex; gap:16px; margin-bottom:24px; }
+  .prep-box  { flex:1; border-radius:10px; border:1.5px solid; padding:16px; }
+  .prep-title { font-weight:800; font-size:12.5px; margin-bottom:10px; }
+  .prep-item { display:flex; gap:8px; margin-bottom:5px; align-items:flex-start; }
+  .prep-check { width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; flex-shrink:0; margin-top:1px; }
+  .prep-text  { font-size:12px; color:#374151; }
+
+  .agenda-title { font-weight:900; font-size:13px; color:var(--navy); margin-bottom:12px; }
+  .agenda-list  { display:flex; flex-direction:column; }
+  .agenda-item  { display:flex; align-items:stretch; gap:0; }
+  .agenda-left  { width:46px; display:flex; flex-direction:column; align-items:center; }
+  .agenda-circle {
+    width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:900; font-size:10.5px; z-index:1; flex-shrink:0;
+  }
+  .agenda-line  { width:2px; flex:1; min-height:12px; opacity:.33; }
+  .agenda-body  { flex:1; padding-bottom:14px; padding-left:10px; }
+  .ag-label { font-weight:700; font-size:13px; color:var(--navy); }
+  .ag-who   { font-size:11px; font-weight:700; margin-top:1px; }
+  .ag-note  { font-size:11px; color:var(--gray); margin-top:2px; }
+
+  .matrix-box { background:var(--card); border-radius:10px; padding:18px; margin-top:16px; }
+  .matrix-title { font-weight:900; font-size:13px; color:var(--navy); margin-bottom:12px; }
+  .matrix-grid  { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .matrix-item  { background:#fff; border-radius:8px; padding:10px 14px; border:1px solid var(--border); }
+  .matrix-item-title { font-weight:800; font-size:12px; color:var(--navy); }
+  .matrix-item-desc  { font-size:11px; color:var(--gray); margin-top:2px; }
+  .matrix-bar   { display:flex; gap:4px; margin-top:6px; }
+  .matrix-bar-seg { flex:1; height:6px; border-radius:3px; }
+  .score-badges { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+  .score-badge  { border-radius:6px; padding:5px 12px; font-size:11px; font-weight:800; }
+
+  /* ─────────────────────────────────────────
+     REPORT TAB
+  ───────────────────────────────────────── */
+  #panel-report { flex-direction:column; }
+  #panel-report .card { width:100%; }
+  .rpt-title { font-size:17px; font-weight:900; color:var(--navy); margin-bottom:6px; }
+  .rpt-sub   { font-size:13px; color:var(--gray); margin-bottom:24px; }
+  .level-list { display:flex; flex-direction:column; gap:10px; margin-bottom:28px; }
+  .level-item { display:flex; gap:14px; align-items:center; border-radius:12px; border:2px solid; padding:14px 18px; }
+  .level-bar  { width:8px; height:60px; border-radius:4px; flex-shrink:0; }
+  .level-body { flex:1; }
+  .level-who  { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .level-from { font-weight:900; font-size:13px; }
+  .level-arr  { font-size:16px; color:var(--gray); }
+  .level-to   { font-weight:800; font-size:13px; color:var(--navy); }
+  .level-meta { display:flex; gap:8px; margin-bottom:5px; flex-wrap:wrap; }
+  .level-freq { border-radius:4px; padding:2px 8px; font-size:11px; font-weight:800; }
+  .level-chan { background:var(--card); border-radius:4px; padding:2px 8px; font-size:11px; color:var(--gray); }
+  .level-content { font-size:12px; color:#374151; }
+  .tmpl-title { font-weight:900; font-size:13px; color:var(--navy); margin-bottom:12px; }
+  .tmpl-list  { display:flex; flex-direction:column; gap:8px; }
+  .tmpl-item  { border-radius:10px; border:1.5px solid; padding:12px 16px; }
+  .tmpl-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .tmpl-num  {
+    width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:900; color:#fff;
+  }
+  .tmpl-name { font-weight:800; font-size:13px; }
+  .tmpl-body { padding-left:30px; display:flex; flex-direction:column; gap:3px; }
+  .tmpl-row  { font-size:12px; color:#374151; display:flex; gap:6px; }
+  .tmpl-dot  { font-weight:900; }
+
+  /* ── FOOTER LEGEND ── */
+  .legend { padding:12px 28px 24px; display:flex; gap:16px; flex-wrap:wrap; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--gray); }
+  .leg-solid  { width:24px; height:2px; }
+  .leg-dashed { width:24px; height:0; border-top:2px dashed; }
+  .leg-dot    { width:12px; height:12px; border-radius:50%; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-eyebrow">BoltX Platform</div>
+  <div class="header-title">Quy Trình Quản Lý Issue — Luồng 2</div>
+  <div class="header-sub">Issue thường / Improvement &nbsp;·&nbsp; Complexity S–M &nbsp;·&nbsp; Sprint 2 tuần</div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="flow">🔄 Luồng xử lý</button>
+    <button class="tab-btn" data-tab="sprint">📅 Sprint 2 tuần</button>
+    <button class="tab-btn" data-tab="meeting">👥 Họp tháng</button>
+    <button class="tab-btn" data-tab="report">📊 Báo cáo</button>
+  </div>
+</div>
+
+<div class="body-wrap">
+
+  <!-- ══════════════════════════════════════════
+       TAB: LUỒNG XỬ LÝ
+  ══════════════════════════════════════════ -->
+  <div id="panel-flow" class="tab-panel active">
+
+    <!-- FLOWCHART CARD -->
+    <div class="card flow-card">
+      <div class="hint-badge">👆 Nhấn vào từng bước để xem chi tiết</div>
+
+      <div class="swimlane-wrap">
+
+        <!-- Role labels -->
+        <div class="role-col" id="roleCol">
+          <div class="role-cell" id="role0" style="border-color:#F59E0B33; color:#F59E0B;">KH / Sale / Internal</div>
+          <div class="role-cell" id="role1" style="border-color:#1A7B8A33; color:#1A7B8A;">CX / PTSP</div>
+          <div class="role-cell" id="role2" style="border-color:#2E75B633; color:#2E75B6;">BA / PO / PM</div>
+          <div class="role-cell" id="role3" style="border-color:#1E3A5F33; color:#1E3A5F;">DEV</div>
+          <div class="role-cell" id="role4" style="border-color:#1A7B8A33; color:#1A7B8A;">QA / BA / User</div>
+          <div class="role-cell" id="role5" style="border-color:#1F7A4D33; color:#1F7A4D;">PM / DevOps</div>
+        </div>
+
+        <!-- Flow column -->
+        <div class="flow-col">
+
+          <div id="lm0"></div><!-- START -->
+          <div data-zone="0" style="height:80px;display:flex;align-items:center;">
+            <div class="node-start">📨 Gửi Issue / Đề xuất</div>
+          </div>
+
+          <!-- arrow -->
+          <div class="arrow-down">
+            <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+          </div>
+
+          <div id="lm1"></div><!-- TIEP NHAN -->
+          <div data-zone="1" style="height:126px;display:flex;align-items:center;">
+            <div class="node" style="background:#1A7B8A;width:180px;" data-step="receive" onclick="toggleStep('receive')">
+              <span class="nlabel">Tiếp nhận &amp; Tạo Ticket Jira</span>
+              <span class="nsub">CX / PTSP</span>
+            </div>
+          </div>
+
+          <!-- arrow -->
+          <div class="arrow-down">
+            <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+          </div>
+
+          <div id="lm2"></div><!-- TRIAGE -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <div class="gate-badge" style="background:#2E75B6;">
+              <span class="gate-num">1</span>
+              <span class="gate-label">Gate 1: Triage</span>
+            </div>
+            <div class="node" style="background:#2E75B6;width:170px;" data-step="triage" onclick="toggleStep('triage')">
+              <span class="nlabel">Triage</span>
+              <span class="nsub">Đánh giá &amp; phân loại</span>
+            </div>
+          </div>
+
+          <!-- arrow -->
+          <div class="arrow-down" style="margin:4px 0;">
+            <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+          </div>
+
+          <!-- DIAMOND: Hợp lệ? — centered, REJECT absolute left -->
+          <div style="position:relative;display:flex;flex-direction:column;align-items:center;width:200px;">
+            <div class="diamond-wrap">
+              <div class="diamond-outer" style="width:94px;height:94px;background:#C55A11;">
+                <div class="diamond-inner"><div class="dlabel">Hợp lệ?</div></div>
+              </div>
+            </div>
+            <!-- REJECT: floats left, vertically centered on diamond -->
+            <div style="position:absolute;left:-110px;top:28px;display:flex;align-items:center;gap:4px;">
+              <div class="reject-box" style="width:88px;">✗ Reject<span>Closed + lý do</span></div>
+              <svg width="54" height="20"><line x1="54" y1="10" x2="8" y2="10" stroke="#B22222" stroke-width="2" stroke-dasharray="4,2"/><polygon points="8,5 8,15 0,10" fill="#B22222"/></svg>
+            </div>
+          </div>
+
+          <!-- PASS continues straight down -->
+          <div style="display:flex;flex-direction:column;align-items:center;">
+              <div class="arrow-down">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#1F7A4D" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#1F7A4D"/></svg>
+                <span class="arrow-label" style="color:#1F7A4D;">✓ PASS</span>
+              </div>
+
+              <!-- PLANNED -->
+              <div style="height:70px;display:flex;align-items:center;">
+                <div class="node" style="background:#1E3A5F;width:170px;" data-step="planned" onclick="toggleStep('planned')">
+                  <span class="nlabel">Planned</span>
+                  <span class="nsub">Vào Sprint / Release</span>
+                </div>
+              </div>
+
+              <!-- arrow -->
+              <div class="arrow-down">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+              </div>
+
+              <!-- REFINING -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <div class="gate-badge" style="background:#1F7A4D;">
+                  <span class="gate-num">2</span>
+                  <span class="gate-label">Gate 2: Ready for Dev</span>
+                </div>
+                <div class="node" style="background:#2E75B6;width:170px;" data-step="refining" onclick="toggleStep('refining')">
+                  <span class="nlabel">Refining</span>
+                  <span class="nsub">Làm rõ AC &amp; Scope</span>
+                </div>
+              </div>
+
+              <!-- arrow -->
+              <div class="arrow-down">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+              </div>
+
+              <div id="lm3"></div><!-- IN PROGRESS -->
+              <div style="height:168px;display:flex;align-items:center;">
+                <div class="node" style="background:#1E3A5F;width:170px;" data-step="inprogress" onclick="toggleStep('inprogress')">
+                  <span class="nlabel">In Progress</span>
+                  <span class="nsub">Coding + Unit Test</span>
+                </div>
+              </div>
+
+              <!-- arrow -->
+              <div class="arrow-down">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+              </div>
+
+              <div id="lm4"></div><!-- TESTING -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <div class="gate-badge" style="background:#1A7B8A;">
+                  <span class="gate-num">3</span>
+                  <span class="gate-label">Gate 3: Testing + UAT</span>
+                </div>
+                <div style="height:126px;display:flex;align-items:center;">
+                  <div class="node" style="background:#1A7B8A;width:170px;" data-step="testing" onclick="toggleStep('testing')">
+                    <span class="nlabel">Testing + UAT</span>
+                    <span class="nsub">Nghiệm thu</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- arrow -->
+              <div class="arrow-down" style="margin:4px 0;">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+              </div>
+
+              <!-- DIAMOND: Pass? — centered, FAIL absolute left -->
+              <div style="position:relative;display:flex;flex-direction:column;align-items:center;width:200px;">
+                <div class="diamond-wrap">
+                  <div class="diamond-outer" style="width:80px;height:80px;background:#1A7B8A;">
+                    <div class="diamond-inner"><div class="dlabel">Pass?</div></div>
+                  </div>
+                </div>
+                <!-- FAIL: floats left, vertically centered on diamond -->
+                <div style="position:absolute;left:-104px;top:22px;display:flex;align-items:center;gap:4px;">
+                  <div class="reject-box" style="width:80px;">✗ FAIL<span>Dev fix lại</span></div>
+                  <svg width="54" height="20"><line x1="54" y1="10" x2="8" y2="10" stroke="#B22222" stroke-width="2" stroke-dasharray="4,2"/><polygon points="8,5 8,15 0,10" fill="#B22222"/></svg>
+                </div>
+              </div>
+
+              <!-- PASS → RELEASE continues straight down -->
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                  <div class="arrow-down">
+                    <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#1F7A4D" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#1F7A4D"/></svg>
+                    <span class="arrow-label" style="color:#1F7A4D;">✓ PASS</span>
+                  </div>
+
+                  <div id="lm5"></div><!-- RELEASE -->
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                    <div class="gate-badge" style="background:#C55A11;">
+                      <span class="gate-num">4</span>
+                      <span class="gate-label">Gate 4: Ready Release</span>
+                    </div>
+                    <div style="height:90px;display:flex;align-items:center;">
+                      <div class="node" style="background:#1F7A4D;width:170px;" data-step="release" onclick="toggleStep('release')">
+                        <span class="nlabel">🚀 Release Production</span>
+                        <span class="nsub">Deploy + Smoke Test</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- arrow -->
+                  <div class="arrow-down">
+                    <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+                  </div>
+
+                  <!-- DONE -->
+                  <div class="node" style="background:#1F7A4D;width:150px;" data-step="done" onclick="toggleStep('done')">
+                    <span class="nlabel">✅ Done</span>
+                    <span class="nsub">PM cập nhật Jira</span>
+                  </div>
+                </div>
+              </div><!-- end branch testing -->
+
+
+        </div><!-- end flow-col -->
+      </div><!-- end swimlane-wrap -->
+    </div><!-- end flow-card -->
+
+    <!-- DETAIL CARD -->
+    <div class="card detail-card" id="detailCard">
+
+      <!-- Empty state -->
+      <div class="detail-empty" id="detailEmpty">
+        <div class="de-icon">👆</div>
+        <div class="de-title">Nhấn vào bước trên lưu đồ</div>
+        <div class="de-sub">để xem chi tiết trách nhiệm,<br>dữ liệu bắt buộc và điều kiện chuyển bước</div>
+        <div class="step-list" id="stepList"></div>
+      </div>
+
+      <!-- Detail content (populated by JS) -->
+      <div class="detail-content" id="detailContent"></div>
+
+    </div><!-- end detail-card -->
+
+  </div><!-- end panel-flow -->
+
+
+  <!-- ══════════════════════════════════════════
+       TAB: SPRINT 2 TUẦN
+  ══════════════════════════════════════════ -->
+  <div id="panel-sprint" class="tab-panel">
+    <div class="card">
+      <div class="sprint-tab-title">📅 Lịch Sprint 2 Tuần</div>
+      <div class="sprint-tab-sub">Mỗi tháng thực hiện 2 sprint, mỗi sprint kết thúc bằng 1 release lên Production</div>
+
+      <!-- Week 1 -->
+      <div style="margin-bottom:24px;">
+        <div class="week-label" style="background:#1E3A5F;">TUẦN 1</div>
+        <div class="days-row">
+          <div class="day-col">
+            <div class="day-header">T2</div>
+            <div class="day-event" style="background:#2E75B612;border-color:#2E75B644;">
+              <div class="ev-title" style="color:#2E75B6;">Issue Review Meeting</div>
+              <div class="ev-who">BoltX + Cty thành viên</div>
+              <div class="ev-note">Đầu tháng: Sync danh mục issue, ưu tiên hóa</div>
+            </div>
+          </div>
+          <div class="day-col">
+            <div class="day-header">T3</div>
+            <div class="day-event" style="background:#1E3A5F12;border-color:#1E3A5F44;">
+              <div class="ev-title" style="color:#1E3A5F;">Sprint Planning</div>
+              <div class="ev-who">PM, BA, Dev Lead</div>
+              <div class="ev-note">Chọn issue, estimate, commit sprint goal</div>
+            </div>
+          </div>
+          <div class="day-col">
+            <div class="day-header">T4</div>
+            <div class="day-event" style="background:#2E75B612;border-color:#2E75B644;">
+              <div class="ev-title" style="color:#2E75B6;">Refining</div>
+              <div class="ev-who">BA + Dev</div>
+              <div class="ev-note">Làm rõ AC, scope cho từng issue</div>
+            </div>
+          </div>
+          <div class="day-col">
+            <div class="day-header">T5 – T6</div>
+            <div class="day-event" style="background:#1E3A5F12;border-color:#1E3A5F44;">
+              <div class="ev-title" style="color:#1E3A5F;">In Progress</div>
+              <div class="ev-who">Dev</div>
+              <div class="ev-note">Coding + Unit Test</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Week 2 -->
+      <div style="margin-bottom:16px;">
+        <div class="week-label" style="background:#1A7B8A;">TUẦN 2</div>
+        <div class="days-row">
+          <div class="day-col">
+            <div class="day-header">T2 – T3</div>
+            <div class="day-event" style="background:#1A7B8A12;border-color:#1A7B8A44;">
+              <div class="ev-title" style="color:#1A7B8A;">Testing + UAT</div>
+              <div class="ev-who">QA/BA + User</div>
+              <div class="ev-note">Happy case → Edge → Negative, Nghiệm thu</div>
+            </div>
+          </div>
+          <div class="day-col">
+            <div class="day-header">T4</div>
+            <div class="day-event" style="background:#C55A1112;border-color:#C55A1144;">
+              <div class="ev-title" style="color:#C55A11;">Bug Fix (nếu có)</div>
+              <div class="ev-who">Dev</div>
+              <div class="ev-note">Fix bug phát hiện trong testing</div>
+            </div>
+          </div>
+          <div class="day-col">
+            <div class="day-header">T5</div>
+            <div class="day-event" style="background:#1F7A4D12;border-color:#1F7A4D44;">
+              <div class="ev-title" style="color:#1F7A4D;">Golive Meeting</div>
+              <div class="ev-who">PM, Dev Lead, QA</div>
+              <div class="ev-note">Review checklist, PM phê duyệt release</div>
+            </div>
+          </div>
+          <div class="day-col">
+            <div class="day-header">T6</div>
+            <div class="day-event" style="background:#1F7A4D12;border-color:#1F7A4D44;">
+              <div class="ev-title" style="color:#1F7A4D;">🚀 Release Production</div>
+              <div class="ev-who">DevOps + Dev</div>
+              <div class="ev-note">Deploy + Smoke Test + Monitor 24h</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recurring events -->
+      <div class="recurring-box">
+        <div class="recurring-title">⏰ Sự kiện cố định hàng tuần</div>
+        <div class="recurring-row">
+          <div class="recurring-item" style="border-color:#C55A11;">
+            <div class="ri-day" style="color:#C55A11;">Thứ 5</div>
+            <div class="ri-title">Golive Approval Meeting</div>
+            <div class="ri-who">PM, Dev Lead, QA</div>
+          </div>
+          <div class="recurring-item" style="border-color:#2E75B6;">
+            <div class="ri-day" style="color:#2E75B6;">Thứ 6</div>
+            <div class="ri-title">Báo cáo tiến độ tuần</div>
+            <div class="ri-who">PM → Ban lãnh đạo</div>
+          </div>
+          <div class="recurring-item" style="border-color:#1F7A4D;">
+            <div class="ri-day" style="color:#1F7A4D;">Thứ 6</div>
+            <div class="ri-title">Release Production</div>
+            <div class="ri-who">DevOps + Dev</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- end panel-sprint -->
+
+
+  <!-- ══════════════════════════════════════════
+       TAB: HỌP THÁNG
+  ══════════════════════════════════════════ -->
+  <div id="panel-meeting" class="tab-panel">
+    <div class="card">
+      <div class="mtg-title">👥 Issue Review Meeting — 1 tháng/lần</div>
+      <div class="mtg-sub">Tuần đầu tháng (Thứ 3) &nbsp;·&nbsp; 120–150 phút &nbsp;·&nbsp; BoltX + Công ty thành viên</div>
+
+      <!-- Prep -->
+      <div class="prep-row">
+        <div class="prep-box" style="background:#2E75B610;border-color:#2E75B633;">
+          <div class="prep-title" style="color:#2E75B6;">📋 BoltX chuẩn bị (T-3 ngày)</div>
+          <div class="prep-item"><span class="prep-check" style="background:#2E75B6;">✓</span><span class="prep-text">Export Jira: toàn bộ issue mở</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#2E75B6;">✓</span><span class="prep-text">Tổng hợp kết quả tháng trước</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#2E75B6;">✓</span><span class="prep-text">Slide tóm tắt (max 10 slide)</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#2E75B6;">✓</span><span class="prep-text">Gửi tài liệu cho cty thành viên trước 2 ngày</span></div>
+        </div>
+        <div class="prep-box" style="background:#1A7B8A10;border-color:#1A7B8A33;">
+          <div class="prep-title" style="color:#1A7B8A;">📋 Công ty thành viên chuẩn bị</div>
+          <div class="prep-item"><span class="prep-check" style="background:#1A7B8A;">✓</span><span class="prep-text">Danh sách issue mới (theo template)</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#1A7B8A;">✓</span><span class="prep-text">Feedback issue đã deliver</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#1A7B8A;">✓</span><span class="prep-text">Thay đổi nghiệp vụ cần thông báo</span></div>
+        </div>
+      </div>
+
+      <!-- Agenda -->
+      <div class="agenda-title">📌 Agenda buổi họp</div>
+      <div class="agenda-list">
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#6B7280;">10'</div><div class="agenda-line" style="background:#6B7280;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Khai mạc &amp; mục tiêu</div><div class="ag-who" style="color:#6B7280;">PM BoltX</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#2E75B6;">20'</div><div class="agenda-line" style="background:#2E75B6;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Review kết quả tháng trước</div><div class="ag-who" style="color:#2E75B6;">PM + BA</div><div class="ag-note">Issue done, delayed, quality metrics</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#1E3A5F;">30'</div><div class="agenda-line" style="background:#1E3A5F;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Review backlog hiện tại</div><div class="ag-who" style="color:#1E3A5F;">BA + Đại diện cty</div><div class="ag-note">Đánh giá từng issue tồn đọng, cập nhật trạng thái</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#1A7B8A;">20'</div><div class="agenda-line" style="background:#1A7B8A;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Tiếp nhận issue mới</div><div class="ag-who" style="color:#1A7B8A;">BA + Đại diện cty</div><div class="ag-note">Triage nhanh, ước lượng sơ bộ</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#C55A11;">30'</div><div class="agenda-line" style="background:#C55A11;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Thống nhất ưu tiên tháng mới</div><div class="ag-who" style="color:#C55A11;">PM + PO + Đại diện cty</div><div class="ag-note">Xếp hạng theo điểm, cam kết lịch deliver</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#6B7280;">15'</div><div class="agenda-line" style="background:#6B7280;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Vấn đề khác / thay đổi nghiệp vụ</div><div class="ag-who" style="color:#6B7280;">CEO / Deputy (nếu cần)</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#1F7A4D;">15'</div></div>
+          <div class="agenda-body"><div class="ag-label">Tổng kết &amp; Action items</div><div class="ag-who" style="color:#1F7A4D;">PM BoltX</div><div class="ag-note">Chốt danh sách, lịch họp tháng sau</div></div>
+        </div>
+      </div>
+
+      <!-- Priority matrix -->
+      <div class="matrix-box">
+        <div class="matrix-title">🎯 Ma trận ưu tiên issue (tổng điểm tối đa: 12)</div>
+        <div class="matrix-grid">
+          <div class="matrix-item">
+            <div class="matrix-item-title">Business Impact</div>
+            <div class="matrix-item-desc">High = 3, Medium = 2, Low = 1</div>
+            <div class="matrix-bar">
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#1F7A4D;"></div>
+            </div>
+          </div>
+          <div class="matrix-item">
+            <div class="matrix-item-title">Urgency</div>
+            <div class="matrix-item-desc">Tháng này = 3, 1–2 tháng = 2, Defer = 1</div>
+            <div class="matrix-bar">
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#1F7A4D;"></div>
+            </div>
+          </div>
+          <div class="matrix-item">
+            <div class="matrix-item-title">Compliance / Risk</div>
+            <div class="matrix-item-desc">Pháp lý = 3, Vận hành = 2, Không = 1</div>
+            <div class="matrix-bar">
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#1F7A4D;"></div>
+            </div>
+          </div>
+          <div class="matrix-item">
+            <div class="matrix-item-title">Effort (đảo ngược)</div>
+            <div class="matrix-item-desc">S = 3, M = 2, L → Luồng 3</div>
+            <div class="matrix-bar">
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#1F7A4D;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="score-badges">
+          <div class="score-badge" style="background:#1F7A4D18;border:1px solid #1F7A4D44;color:#1F7A4D;">≥ 9 : Ưu tiên cao nhất</div>
+          <div class="score-badge" style="background:#C55A1118;border:1px solid #C55A1144;color:#C55A11;">6–8 : Tháng sau</div>
+          <div class="score-badge" style="background:#6B728018;border:1px solid #6B728044;color:#6B7280;">&lt; 6 : Backlog</div>
+        </div>
+      </div>
+    </div>
+  </div><!-- end panel-meeting -->
+
+
+  <!-- ══════════════════════════════════════════
+       TAB: BÁO CÁO
+  ══════════════════════════════════════════ -->
+  <div id="panel-report" class="tab-panel">
+    <div class="card">
+      <div class="rpt-title">📊 Cơ chế Báo cáo Công việc</div>
+      <div class="rpt-sub">Phân tầng từ vận hành đến Ban lãnh đạo — mỗi cấp nhận đúng thông tin cần thiết</div>
+
+      <!-- Levels -->
+      <div class="level-list">
+        <div class="level-item" style="background:#6B72800A;border-color:#6B728030;">
+          <div class="level-bar" style="background:#6B7280;"></div>
+          <div class="level-body">
+            <div class="level-who"><span class="level-from" style="color:#6B7280;">Dev / QA / BA</span><span class="level-arr">→</span><span class="level-to">PM</span></div>
+            <div class="level-meta"><span class="level-freq" style="background:#6B728022;color:#6B7280;">⏱ Realtime</span><span class="level-chan">📤 Jira comment</span></div>
+            <div class="level-content">Cập nhật status ticket, log giờ, báo blocker</div>
+          </div>
+        </div>
+        <div class="level-item" style="background:#2E75B60A;border-color:#2E75B630;">
+          <div class="level-bar" style="background:#2E75B6;"></div>
+          <div class="level-body">
+            <div class="level-who"><span class="level-from" style="color:#2E75B6;">PM (tổng hợp)</span><span class="level-arr">→</span><span class="level-to">Ban lãnh đạo nội bộ</span></div>
+            <div class="level-meta"><span class="level-freq" style="background:#2E75B622;color:#2E75B6;">⏱ 1 tuần/lần (Thứ 6)</span><span class="level-chan">📤 Wiki + Email</span></div>
+            <div class="level-content">Kết quả sprint, issue done/block, rủi ro, kế hoạch tuần tới</div>
+          </div>
+        </div>
+        <div class="level-item" style="background:#1A7B8A0A;border-color:#1A7B8A30;">
+          <div class="level-bar" style="background:#1A7B8A;"></div>
+          <div class="level-body">
+            <div class="level-who"><span class="level-from" style="color:#1A7B8A;">BoltX</span><span class="level-arr">→</span><span class="level-to">Công ty thành viên</span></div>
+            <div class="level-meta"><span class="level-freq" style="background:#1A7B8A22;color:#1A7B8A;">⏱ 1 tháng/lần</span><span class="level-chan">📤 Họp + Email</span></div>
+            <div class="level-content">Issue Review Meeting, kế hoạch tháng, release đã deliver</div>
+          </div>
+        </div>
+        <div class="level-item" style="background:#1E3A5F0A;border-color:#1E3A5F30;">
+          <div class="level-bar" style="background:#1E3A5F;"></div>
+          <div class="level-body">
+            <div class="level-who"><span class="level-from" style="color:#1E3A5F;">BoltX</span><span class="level-arr">→</span><span class="level-to">Ban KH-CL / Chủ tịch TĐ</span></div>
+            <div class="level-meta"><span class="level-freq" style="background:#1E3A5F22;color:#1E3A5F;">⏱ 1 tháng/lần</span><span class="level-chan">📤 Báo cáo chính thức</span></div>
+            <div class="level-content">KPI, business outcome, rủi ro, đề xuất</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly report template -->
+      <div class="tmpl-title">📄 Template Báo cáo Tuần (PM → BLĐ)</div>
+      <div class="tmpl-list">
+        <div class="tmpl-item" style="background:#1F7A4D0D;border-color:#1F7A4D33;">
+          <div class="tmpl-header">
+            <span class="tmpl-num" style="background:#1F7A4D;">1</span>
+            <span class="tmpl-name" style="color:#1F7A4D;">Kết quả tuần này</span>
+          </div>
+          <div class="tmpl-body">
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1F7A4D;">•</span> Số issue completed: X / Y đã lên kế hoạch</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1F7A4D;">•</span> Danh sách release đã deploy</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1F7A4D;">•</span> Số bug phát sinh sau release</div>
+          </div>
+        </div>
+        <div class="tmpl-item" style="background:#2E75B60D;border-color:#2E75B633;">
+          <div class="tmpl-header">
+            <span class="tmpl-num" style="background:#2E75B6;">2</span>
+            <span class="tmpl-name" style="color:#2E75B6;">Tình trạng Sprint hiện tại</span>
+          </div>
+          <div class="tmpl-body">
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#2E75B6;">•</span> Sprint X/Y ngày đã qua: tiến độ (%)</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#2E75B6;">•</span> Issue đang bị block + lý do</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#2E75B6;">•</span> Issue có nguy cơ trễ</div>
+          </div>
+        </div>
+        <div class="tmpl-item" style="background:#C55A110D;border-color:#C55A1133;">
+          <div class="tmpl-header">
+            <span class="tmpl-num" style="background:#C55A11;">3</span>
+            <span class="tmpl-name" style="color:#C55A11;">Rủi ro &amp; Quyết định cần BLĐ</span>
+          </div>
+          <div class="tmpl-body">
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#C55A11;">•</span> Vấn đề nổi bật tuần này</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#C55A11;">•</span> Đề xuất cần phê duyệt</div>
+          </div>
+        </div>
+        <div class="tmpl-item" style="background:#1E3A5F0D;border-color:#1E3A5F33;">
+          <div class="tmpl-header">
+            <span class="tmpl-num" style="background:#1E3A5F;">4</span>
+            <span class="tmpl-name" style="color:#1E3A5F;">Kế hoạch tuần sau</span>
+          </div>
+          <div class="tmpl-body">
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1E3A5F;">•</span> Issue dự kiến complete</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1E3A5F;">•</span> Release dự kiến deploy (ngày + nội dung)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- end panel-report -->
+
+</div><!-- end body-wrap -->
+
+<!-- LEGEND -->
+<div class="legend" id="legend">
+  <div class="legend-item"><div class="leg-solid" style="background:#1F7A4D;"></div> Luồng đi tiếp (PASS)</div>
+  <div class="legend-item"><div class="leg-dashed" style="border-color:#B22222;"></div> Luồng trả lại (FAIL)</div>
+  <div class="legend-item"><div class="leg-dot" style="background:#C55A11;"></div> Quality Gate</div>
+  <div class="legend-item"><span>👆</span> Nhấn vào node để xem chi tiết</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════ -->
+<script>
+// ── TAB SWITCHING ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    document.getElementById('legend').style.display = btn.dataset.tab === 'flow' ? '' : 'none';
+  });
+});
+
+// ── STEP DATA ──
+const STEPS = {
+  receive: {
+    title: 'Tiếp nhận & Tạo Ticket',
+    role: 'CX / PTSP',
+    color: '#1A7B8A',
+    items: [
+      'Bắt buộc tạo ticket Jira trước khi xử lý',
+      'Điền đủ: Summary, Description, Issue Type, Priority, Product Line',
+      'Đính kèm ảnh/video minh chứng nếu có',
+      'Nguồn tiếp nhận: Chat / Zalo / Email / Meeting',
+    ],
+    docs: ['Jira Ticket (New)', 'Screenshot / Video'],
+  },
+  triage: {
+    title: 'Triage — Đánh giá sơ bộ',
+    role: 'BA / PO',
+    color: '#2E75B6',
+    gate: { num: 1, label: 'Triage' },
+    items: [
+      'Xác nhận issue hợp lệ, không trùng lặp',
+      'Đánh giá Business Impact: High / Medium / Low',
+      'Xác định Complexity sơ bộ: S / M (L → Luồng 3)',
+      'Xác định System Impact: FE / BE / DB / ...',
+      'Quyết định: Approve → Planned | Reject | Escalate',
+    ],
+    docs: ['Business Impact', 'Complexity', 'System Impact'],
+  },
+  planned: {
+    title: 'Planned — Lên kế hoạch',
+    role: 'PM / PO',
+    color: '#1E3A5F',
+    items: [
+      'Gán Fix Version (Release) và Sprint',
+      'Xác nhận Priority chính thức',
+      'Gán Product Owner & BA Owner',
+      'Cân đối resource và business impact',
+    ],
+    docs: ['Fix Version', 'Sprint', 'Priority'],
+  },
+  refining: {
+    title: 'Refining — Làm rõ yêu cầu',
+    role: 'BA + Dev',
+    color: '#2E75B6',
+    gate: { num: 2, label: 'Ready for Dev' },
+    items: [
+      'BA + Dev họp làm rõ requirement (30–60 phút)',
+      'Viết Acceptance Criteria rõ ràng, có thể test được',
+      'Xác định Scope: IN / OUT of scope',
+      'Vẽ flow nghiệp vụ nếu cần',
+      'Re-estimate Complexity nếu phức tạp hơn dự kiến',
+    ],
+    docs: ['Acceptance Criteria', 'Scope', 'Flow nghiệp vụ'],
+  },
+  inprogress: {
+    title: 'In Progress — Phát triển',
+    role: 'Dev',
+    color: '#1E3A5F',
+    items: [
+      'Code theo Acceptance Criteria và tài liệu BA',
+      'Log thời gian làm việc trên Jira',
+      'Unit Test: API response, DB integrity, performance cơ bản',
+      'Code Review: PR được Dev Lead approve trước khi chuyển Testing',
+    ],
+    docs: ['Code source / Branch', 'Kết quả Unit Test', 'PR / Merge info'],
+  },
+  testing: {
+    title: 'Testing + UAT — Nghiệm thu',
+    role: 'QA / BA / User',
+    color: '#1A7B8A',
+    gate: { num: 3, label: 'Testing + UAT' },
+    items: [
+      'QA/BA test: Happy case → Edge case → Negative case theo test case đã viết',
+      'UAT với đại diện User / Business / CX/PTSP trên môi trường UAT',
+      'PASS: Không lỗi Critical/Blocker, luồng chính hoạt động 100%',
+      'FAIL: Trả Dev, ghi rõ bug list → Dev fix → Test lại từ đầu',
+    ],
+    docs: ['Test case & data', 'Kết quả test (PASS/FAIL)', 'Biên bản nghiệm thu UAT'],
+  },
+  release: {
+    title: 'Ready Release & Go-live',
+    role: 'PM / DevOps',
+    color: '#1F7A4D',
+    gate: { num: 4, label: 'Ready Release' },
+    items: [
+      'Họp Golive Approval (Thứ 5 hàng tuần)',
+      'PM kiểm tra checklist 10 hạng mục, xác nhận không còn Blocker',
+      'CEO phê duyệt nếu release ảnh hưởng nghiệp vụ quan trọng',
+      'DevOps deploy Production theo Deployment Plan',
+      'Smoke Test trên PROD ngay sau deploy',
+      'Monitor 24h: Log, performance, error rate',
+    ],
+    docs: ['Release Note', 'Deployment Plan', 'Rollback Plan', 'Smoke Test result'],
+  },
+  done: {
+    title: 'Done — Hoàn tất',
+    role: 'PM',
+    color: '#1F7A4D',
+    items: [
+      'PM cập nhật trạng thái Done trên Jira',
+      'Lưu Release Note lên Wiki',
+      'CX/PTSP xác nhận với user cuối',
+      'Monitor tiếp 24h sau golive',
+    ],
+    docs: ['Release Note trên Wiki', 'Xác nhận user'],
+  },
+};
+
+// ── Build step list in empty state ──
+const stepListEl = document.getElementById('stepList');
+Object.entries(STEPS).forEach(([key, s]) => {
+  const el = document.createElement('div');
+  el.className = 'step-list-item';
+  el.style.borderLeftColor = s.color;
+  el.innerHTML = `<div><div class="sli-title">${s.title}</div><div class="sli-role">${s.role}</div></div><span class="sli-arrow">›</span>`;
+  el.addEventListener('click', () => toggleStep(key));
+  stepListEl.appendChild(el);
+});
+
+// ── Toggle step detail ──
+let activeStep = null;
+
+function toggleStep(key) {
+  if (activeStep === key) {
+    activeStep = null;
+    showEmpty();
+    unhighlightAll();
+  } else {
+    activeStep = key;
+    showDetail(key);
+    highlightNode(key);
+  }
+}
+
+function unhighlightAll() {
+  document.querySelectorAll('.node[data-step]').forEach(n => n.classList.remove('active'));
+}
+
+function highlightNode(key) {
+  unhighlightAll();
+  const el = document.querySelector(`.node[data-step="${key}"]`);
+  if (el) {
+    el.classList.add('active');
+    el.style.boxShadow = `0 0 0 3px ${STEPS[key].color}, 0 4px 16px rgba(0,0,0,0.2)`;
+  }
+}
+
+function showEmpty() {
+  document.getElementById('detailEmpty').style.display = '';
+  document.getElementById('detailContent').style.display = 'none';
+  document.getElementById('detailContent').classList.remove('active');
+}
+
+function showDetail(key) {
+  const s = STEPS[key];
+  const dc = document.getElementById('detailContent');
+  const de = document.getElementById('detailEmpty');
+
+  let gateHTML = '';
+  if (s.gate) {
+    gateHTML = `
+      <div style="margin-bottom:16px;">
+        <div class="gate-badge" style="background:${s.color};">
+          <span class="gate-num">${s.gate.num}</span>
+          <span class="gate-label">Gate ${s.gate.num}: ${s.gate.label}</span>
+        </div>
+        <div class="gate-note">Điểm kiểm soát chất lượng — phải đạt trước khi chuyển bước tiếp theo</div>
+      </div>`;
+  }
+
+  const activitiesHTML = s.items.map((item, i) => `
+    <div class="activity-item">
+      <span class="act-num" style="background:${s.color};">${i+1}</span>
+      <span class="act-text">${item}</span>
+    </div>`).join('');
+
+  const docsHTML = s.docs.map(d => `
+    <span class="doc-tag" style="background:${s.color}18;border:1px solid ${s.color}44;color:${s.color};">
+      📋 ${d}
+    </span>`).join('');
+
+  dc.innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="detail-title" style="color:${s.color};">${s.title}</div>
+        <span class="role-tag" style="background:${s.color}22;border:1px solid ${s.color}55;color:${s.color};">${s.role}</span>
+      </div>
+      <button class="close-btn" onclick="toggleStep('${key}')">×</button>
+    </div>
+    ${gateHTML}
+    <div class="section-label">Hoạt động chính</div>
+    <div class="activity-list">${activitiesHTML}</div>
+    <div class="section-label">Dữ liệu / Tài liệu bắt buộc</div>
+    <div class="doc-list">${docsHTML}</div>
+  `;
+
+  de.style.display = 'none';
+  dc.style.display = 'block';
+  dc.classList.add('active');
+}
+
+// Init empty state
+showEmpty();
+
+// ── SYNC SWIMLANE HEIGHTS to actual flow layout ──
+function syncSwimLanes() {
+  const fc = document.querySelector('.flow-col');
+  if (!fc) return;
+
+  // Landmarks mark the TOP of each swimlane zone in the flow-col
+  const ids = ['lm0','lm1','lm2','lm3','lm4','lm5'];
+  const roles = ['role0','role1','role2','role3','role4','role5'];
+
+  const fcTop = fc.getBoundingClientRect().top;
+
+  // Get top positions of each landmark relative to flow-col top
+  const tops = ids.map(id => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    return el.getBoundingClientRect().top - fcTop;
+  });
+
+  // Get total flow-col height
+  const totalH = fc.getBoundingClientRect().height;
+
+  // Compute height of each zone
+  for (let i = 0; i < roles.length; i++) {
+    const top = tops[i];
+    const nextTop = (i + 1 < tops.length && tops[i+1] !== null) ? tops[i+1] : totalH;
+    if (top === null) continue;
+    const h = Math.max(nextTop - top, 32);
+    const el = document.getElementById(roles[i]);
+    if (el) el.style.height = h + 'px';
+  }
+}
+
+// Run after layout
+requestAnimationFrame(() => requestAnimationFrame(syncSwimLanes));
+window.addEventListener('resize', syncSwimLanes);
+</script>
+</body>
+</html>
