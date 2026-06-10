@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BoltX — Template Artifacts</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:   #1E3A5F; --blue:  #2E75B6; --teal: #1A7B8A;
+  --green:  #1F7A4D; --orange:#C55A11; --red:  #B22222;
+  --purple: #5B2D8E; --gray:  #6B7280;
+  --bg: #F0F4F8; --card: #F8FAFC; --border: #E2E8F0;
+  --text: #1E293B; --sub: #64748B;
+}
+body { font-family:'Be Vietnam Pro',sans-serif; background:var(--bg); color:var(--text); font-size:13px; }
+
+/* HEADER */
+.header { background:linear-gradient(120deg,#1E3A5F,#2a5298); padding:22px 32px 18px; color:#fff; }
+.header-title { font-size:22px; font-weight:900; letter-spacing:-.5px; }
+.header-sub   { font-size:13px; opacity:.75; margin-top:4px; }
+.tabs { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+.tab-btn { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2); color:#fff; border-radius:6px; padding:5px 14px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; }
+.tab-btn:hover  { background:rgba(255,255,255,.15); }
+.tab-btn.active { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.6); font-weight:800; }
+
+.body { padding:24px 28px; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* GRID */
+.tmpl-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+
+/* TEMPLATE CARD */
+.tmpl-card {
+  background:#fff; border-radius:12px; border:1.5px solid var(--border);
+  overflow:hidden; cursor:pointer;
+  transition:box-shadow .15s, transform .15s;
+}
+.tmpl-card:hover { box-shadow:0 6px 24px rgba(0,0,0,.1); transform:translateY(-2px); }
+.tc-header { padding:14px 16px 10px; border-bottom:1px solid var(--border); }
+.tc-badge { display:inline-flex; align-items:center; gap:5px; border-radius:20px; padding:3px 10px; font-size:10px; font-weight:800; color:#fff; margin-bottom:8px; }
+.tc-title { font-size:14px; font-weight:800; color:var(--navy); margin-bottom:3px; }
+.tc-meta  { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+.tc-chip  { border-radius:4px; padding:2px 7px; font-size:10px; font-weight:700; }
+.tc-body  { padding:12px 16px 14px; }
+.tc-desc  { font-size:11.5px; color:var(--sub); line-height:1.5; margin-bottom:8px; }
+.tc-fields { display:flex; flex-direction:column; gap:4px; }
+.tc-field { display:flex; gap:6px; font-size:11px; color:var(--text); align-items:flex-start; }
+.tc-dot   { width:5px; height:5px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.tc-footer { padding:8px 16px 12px; display:flex; align-items:center; justify-content:space-between; }
+.tc-owner { font-size:10.5px; font-weight:700; }
+.tc-when  { font-size:10px; color:var(--sub); }
+
+/* MODAL */
+.overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:100; align-items:flex-start; justify-content:center; padding:32px 16px; overflow-y:auto; }
+.overlay.active { display:flex; }
+.modal {
+  background:#fff; border-radius:16px; width:100%; max-width:720px;
+  box-shadow:0 24px 64px rgba(0,0,0,.25); animation:su .18s ease;
+  margin:auto;
+}
+@keyframes su { from { transform:translateY(16px); opacity:0; } }
+.modal-header { padding:22px 24px 14px; border-bottom:1px solid var(--border); position:sticky; top:0; background:#fff; border-radius:16px 16px 0 0; z-index:1; }
+.modal-close  { position:absolute; top:14px; right:14px; background:var(--bg); border:none; border-radius:6px; width:30px; height:30px; cursor:pointer; font-size:18px; color:var(--gray); font-family:inherit; display:flex; align-items:center; justify-content:center; }
+.modal-tag    { font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; margin-bottom:5px; }
+.modal-title  { font-size:20px; font-weight:900; margin-bottom:6px; }
+.modal-meta   { display:flex; gap:6px; flex-wrap:wrap; }
+.modal-body   { padding:20px 24px 28px; }
+
+/* template content */
+.tmpl-section { margin-bottom:22px; }
+.ts-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--gray); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.ts-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* form-like fields */
+.field-group { display:flex; flex-direction:column; gap:8px; }
+.field-row { display:grid; grid-template-columns:160px 1fr; gap:8px; align-items:start; }
+.field-row.full { grid-template-columns:1fr; }
+.field-label { font-size:11px; font-weight:800; color:var(--navy); padding-top:8px; }
+.field-label .req { color:var(--red); margin-left:2px; }
+.field-input {
+  background:var(--card); border:1.5px solid var(--border); border-radius:7px;
+  padding:7px 10px; font-size:12px; color:var(--sub);
+  font-style:italic; line-height:1.5; min-height:34px;
+}
+.field-input.tall { min-height:64px; }
+.field-input.code { font-family:monospace; font-size:11px; background:#F8F9FA; }
+.field-input.req-field { border-color:#fca5a5; background:#FFF5F5; }
+
+/* radio/checkbox group */
+.opt-group { display:flex; flex-wrap:wrap; gap:5px; }
+.opt { border-radius:5px; padding:3px 9px; font-size:11px; font-weight:700; border:1.5px solid; cursor:default; }
+.opt.selected { color:#fff; }
+
+/* checklist */
+.checklist { display:flex; flex-direction:column; gap:5px; }
+.cl-item { display:flex; gap:8px; align-items:flex-start; }
+.cl-box { width:16px; height:16px; border:1.5px solid var(--border); border-radius:3px; flex-shrink:0; margin-top:2px; background:#fff; }
+.cl-text { font-size:12px; color:var(--text); line-height:1.5; }
+.cl-text .req-mark { font-size:10px; font-weight:800; color:var(--red); }
+
+/* note box */
+.note-box { border-radius:8px; padding:10px 14px; font-size:12px; line-height:1.5; border-left:3px solid; margin-top:8px; }
+
+/* copy button */
+.copy-btn { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:4px 12px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--gray); transition:all .15s; }
+.copy-btn:hover { background:var(--border); }
+
+/* table */
+.tmpl-table { width:100%; border-collapse:collapse; font-size:12px; }
+.tmpl-table th { background:var(--navy); color:#fff; padding:7px 10px; text-align:left; font-size:11px; }
+.tmpl-table td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+.tmpl-table tr:nth-child(even) td { background:var(--card); }
+.tmpl-table .placeholder { color:var(--sub); font-style:italic; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">📋 BoltX — Template Artifacts</div>
+  <div class="header-sub">Toàn bộ tài liệu chuẩn theo quy trình · Nhấn vào template để xem đầy đủ</div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="all">📦 Tất cả</button>
+    <button class="tab-btn" data-tab="issue">🎫 Issue / Jira</button>
+    <button class="tab-btn" data-tab="sprint">🏃 Sprint</button>
+    <button class="tab-btn" data-tab="release">🚀 Release</button>
+    <button class="tab-btn" data-tab="report">📊 Báo cáo</button>
+    <button class="tab-btn" data-tab="meeting">👥 Họp</button>
+  </div>
+</div>
+
+<div class="body">
+
+<script>
+// Template data
+const TEMPLATES = [
+
+  // ─── ISSUE / JIRA ───────────────────────────────
+  {
+    id:'jira-ticket', tab:'issue',
+    badge:'🎫 Jira Ticket', badgeColor:'#1A7B8A',
+    title:'Jira Ticket — Tạo Issue mới',
+    owner:'CX / PTSP / Người nhận issue', when:'Ngay khi phát sinh issue',
+    desc:'Template điền khi tạo ticket Jira. Bắt buộc tạo TRƯỚC khi xử lý bất kỳ issue nào.',
+    chips:[{l:'Bắt buộc',c:'#B22222'},{l:'Luồng 1/2',c:'#1A7B8A'}],
+    sections:[
+      { title:'🧩 CORE — Bắt buộc', fields:[
+        { label:'Summary *', type:'input', placeholder:'[Loại] [Module] — Mô tả ngắn gọn vấn đề (< 100 ký tự)', req:true },
+        { label:'Description *', type:'textarea', placeholder:'**Mô tả vấn đề:**\n(Rõ ràng, đủ thông tin để tái hiện)\n\n**Bước tái hiện (nếu là bug):**\n1. \n2. \n3. \n\n**Kết quả thực tế:**\n\n**Kết quả mong đợi:**\n\n**Môi trường:** Production / Staging\n**Tài khoản test:** ', req:true },
+        { label:'Issue Type *', type:'options', req:true, opts:[
+          {l:'Bug',c:'#B22222'},{l:'Improvement',c:'#2E75B6'},{l:'Request',c:'#5B2D8E'},{l:'Task',c:'#6B7280'}
+        ]},
+        { label:'Priority *', type:'options', req:true, opts:[
+          {l:'Critical 🔴',c:'#B22222'},{l:'High 🟠',c:'#C55A11'},{l:'Medium 🟡',c:'#D97706'},{l:'Low 🟢',c:'#1F7A4D'}
+        ]},
+      ]},
+      { title:'🧠 BUSINESS — Bắt buộc', fields:[
+        { label:'Demand Type *', type:'options', req:true, opts:[
+          {l:'Customer Request',c:'#2E75B6'},{l:'Internal Improvement',c:'#1F7A4D'},{l:'Compliance/Regulation',c:'#5B2D8E'},{l:'Incident/Bug',c:'#B22222'}
+        ]},
+        { label:'Product Line *', type:'options', req:true, opts:[
+          {l:'Trading',c:'#1E3A5F'},{l:'Account',c:'#2E75B6'},{l:'Payment',c:'#1A7B8A'},{l:'Margin',c:'#5B2D8E'},{l:'Backoffice',c:'#C55A11'},{l:'Reporting',c:'#1F7A4D'}
+        ]},
+        { label:'Đính kèm', type:'input', placeholder:'Link ảnh chụp màn hình / video / file log (nếu có)' },
+      ]},
+      { title:'📎 GHI CHÚ', fields:[
+        { label:'Nguồn tiếp nhận', type:'options', opts:[
+          {l:'Chat/Zalo',c:'#6B7280'},{l:'Email',c:'#6B7280'},{l:'Meeting',c:'#6B7280'},{l:'Tự phát hiện',c:'#6B7280'}
+        ]},
+      ]},
+    ],
+    note:{ color:'#C55A11', bg:'#FCE4D6', text:'Không xử lý issue nếu chưa có ticket Jira. Ticket phải tạo TRƯỚC khi bắt đầu bất kỳ hành động nào.' }
+  },
+
+  {
+    id:'triage', tab:'issue',
+    badge:'🔍 Triage', badgeColor:'#2E75B6',
+    title:'Triage — Đánh giá & Phân loại',
+    owner:'BA / PO', when:'Trong ngày làm việc tiếp theo sau khi ticket tạo',
+    desc:'BA/PO đánh giá và phân loại issue sau khi nhận được từ CX/PTSP. Output: Approve → Planned hoặc Reject.',
+    chips:[{l:'Gate 1',c:'#2E75B6'},{l:'Luồng 2',c:'#1A7B8A'}],
+    sections:[
+      { title:'✅ ĐÁNH GIÁ', fields:[
+        { label:'Hợp lệ? *', type:'options', req:true, opts:[{l:'✓ Approve',c:'#1F7A4D'},{l:'✗ Reject (duplicate)',c:'#B22222'},{l:'✗ Reject (invalid)',c:'#B22222'},{l:'→ Escalate Luồng 3',c:'#5B2D8E'}]},
+        { label:'Business Impact *', type:'options', req:true, opts:[{l:'High',c:'#B22222'},{l:'Medium',c:'#C55A11'},{l:'Low',c:'#1F7A4D'}]},
+        { label:'Complexity *', type:'options', req:true, opts:[{l:'S (≤2 ngày)',c:'#1F7A4D'},{l:'M (≤5 ngày)',c:'#2E75B6'},{l:'L (≤2 tuần) → Luồng 3',c:'#C55A11'},{l:'XL (>2 tuần) → Luồng 3',c:'#B22222'}]},
+        { label:'System Impact *', type:'options', req:true, opts:[{l:'Frontend',c:'#2E75B6'},{l:'Backend',c:'#1E3A5F'},{l:'Database',c:'#5B2D8E'},{l:'Core Trading',c:'#B22222'},{l:'Payment',c:'#C55A11'},{l:'External System',c:'#1A7B8A'}]},
+      ]},
+      { title:'📌 KẾT QUẢ', fields:[
+        { label:'Quyết định *', type:'textarea', req:true, placeholder:'Approve: Issue hợp lệ, chuyển Planned\n---\nReject: Lý do cụ thể tại sao reject\n---\nEscalate: Chuyển Luồng 3 vì complexity L/XL' },
+        { label:'Ghi chú thêm', type:'input', placeholder:'Thông tin bổ sung, link ticket liên quan...' },
+      ]},
+    ],
+    note:{ color:'#2E75B6', bg:'#DBEAFE', text:'Triage phải hoàn thành trong ngày. Issue không được để trạng thái New quá 1 ngày làm việc.' }
+  },
+
+  {
+    id:'refining', tab:'issue',
+    badge:'🔍 Refining', badgeColor:'#2E75B6',
+    title:'Refining — Acceptance Criteria & Scope',
+    owner:'BA (chủ trì) + Dev', when:'Cuối tháng N-1 cho S1 / T2–T3 tuần 2 cho S2',
+    desc:'BA + Dev làm rõ yêu cầu. Issue chỉ được đưa vào Planning khi status = "Ready for Dev".',
+    chips:[{l:'Gate 2',c:'#1F7A4D'},{l:'Luồng 2',c:'#1A7B8A'}],
+    sections:[
+      { title:'📋 ACCEPTANCE CRITERIA', fields:[
+        { label:'AC #1 *', type:'input', req:true, placeholder:'GIVEN [điều kiện] WHEN [hành động] THEN [kết quả mong đợi]' },
+        { label:'AC #2', type:'input', placeholder:'GIVEN [điều kiện] WHEN [hành động] THEN [kết quả mong đợi]' },
+        { label:'AC #3', type:'input', placeholder:'GIVEN [điều kiện] WHEN [hành động] THEN [kết quả mong đợi]' },
+        { label:'Thêm AC', type:'input', placeholder:'(thêm nếu cần)' },
+      ]},
+      { title:'🎯 SCOPE', fields:[
+        { label:'IN Scope *', type:'textarea', req:true, placeholder:'Những gì SẼ được làm trong issue này:\n• \n• \n• ' },
+        { label:'OUT of Scope *', type:'textarea', req:true, placeholder:'Những gì KHÔNG làm trong issue này:\n• \n• \n• ' },
+      ]},
+      { title:'⚙️ TECHNICAL', fields:[
+        { label:'System Impact *', type:'options', req:true, opts:[{l:'Frontend',c:'#2E75B6'},{l:'Backend',c:'#1E3A5F'},{l:'Database',c:'#5B2D8E'},{l:'Core Trading',c:'#B22222'},{l:'Payment',c:'#C55A11'},{l:'External System',c:'#1A7B8A'}]},
+        { label:'Estimate (Dev) *', type:'options', req:true, opts:[{l:'S — ≤2 ngày',c:'#1F7A4D'},{l:'M — ≤5 ngày',c:'#2E75B6'}]},
+        { label:'Technical notes', type:'textarea', placeholder:'API endpoint liên quan, DB table, edge case kỹ thuật cần chú ý...' },
+        { label:'Dependencies', type:'input', placeholder:'Phụ thuộc vào issue/module nào khác? (link Jira nếu có)' },
+      ]},
+      { title:'🔗 JIRA FIELDS', fields:[
+        { label:'Fix Version *', type:'input', req:true, placeholder:'vX.Y — Sprint N — Tháng M/YYYY' },
+        { label:'BA Owner *', type:'input', req:true, placeholder:'Tên BA phụ trách' },
+        { label:'Product Owner *', type:'input', req:true, placeholder:'Tên PO xác nhận' },
+      ]},
+    ],
+    note:{ color:'#1F7A4D', bg:'#DCFCE7', text:'Quy tắc vàng: Issue chỉ được đưa vào Sprint Planning khi tất cả AC đã confirm, scope đã xác định, estimate đã done. BA chịu trách nhiệm đảm bảo điều này.' }
+  },
+
+  // ─── SPRINT ─────────────────────────────────────
+  {
+    id:'sprint-goal', tab:'sprint',
+    badge:'📋 Sprint Planning', badgeColor:'#1E3A5F',
+    title:'Sprint Planning — Sprint Goal & Backlog',
+    owner:'PM / PO (chủ trì)', when:'Thứ 2 chiều đầu sprint',
+    desc:'Chốt Sprint Goal và Sprint Backlog. Chỉ chọn issues đã "Ready for Dev". Dev bắt đầu ngay sau.',
+    chips:[{l:'2 tuần/sprint',c:'#1E3A5F'},{l:'Chiều T2',c:'#2E75B6'}],
+    sections:[
+      { title:'🎯 SPRINT GOAL', fields:[
+        { label:'Sprint name *', type:'input', req:true, placeholder:'Sprint N — Tháng M/YYYY (VD: Sprint 3 — T6/2025)' },
+        { label:'Sprint Goal *', type:'textarea', req:true, placeholder:'1–2 câu mô tả mục tiêu chính của sprint này.\nVD: "Hoàn thành tính năng X và fix các bug blocking user flow Y"' },
+        { label:'Thời gian', type:'input', placeholder:'T2 DD/MM → T6 DD/MM (2 tuần)' },
+        { label:'Team capacity', type:'input', placeholder:'Dev: X người × Y ngày = Z ngày-người available' },
+      ]},
+      { title:'📦 SPRINT BACKLOG', type:'table',
+        headers:['Jira ID','Tên issue','Complexity','Assignee','Notes'],
+        rows:[
+          ['[ID]','[Tên issue đã Ready for Dev]','S / M','[Dev]',''],
+          ['[ID]','','','',''],
+          ['[ID]','','','',''],
+          ['[ID]','','','',''],
+          ['[ID]','','','',''],
+        ]
+      },
+      { title:'⚠️ RISKS & DEPENDENCIES', fields:[
+        { label:'Risks', type:'textarea', placeholder:'Rủi ro nào có thể ảnh hưởng sprint này?\n• \n• ' },
+        { label:'Dependencies', type:'textarea', placeholder:'Dependencies với team khác hoặc external?\n• ' },
+      ]},
+    ],
+    note:{ color:'#B22222', bg:'#FDECEA', text:'KHÔNG đưa issue chưa "Ready for Dev" vào Sprint. Nếu thiếu issue đã refined → sprint capacity nhỏ hơn, không nhồi issue chưa sẵn sàng.' }
+  },
+
+  {
+    id:'daily-standup', tab:'sprint',
+    badge:'☀️ Daily Standup', badgeColor:'#6B7280',
+    title:'Daily Standup — 15 phút mỗi sáng',
+    owner:'Toàn team sprint', when:'Mỗi sáng trong sprint · 15 phút',
+    desc:'Không phải status report — là sync nhanh để phát hiện blocker sớm. Đứng, không ngồi.',
+    chips:[{l:'15 phút',c:'#6B7280'},{l:'Hàng ngày',c:'#1A7B8A'}],
+    sections:[
+      { title:'3 CÂU HỎI CHO MỖI NGƯỜI', fields:[
+        { label:'1. Hôm qua', type:'input', placeholder:'Đã làm gì? (link Jira ticket)' },
+        { label:'2. Hôm nay', type:'input', placeholder:'Sẽ làm gì? Mục tiêu cụ thể là gì?' },
+        { label:'3. Blocker', type:'input', placeholder:'Có bị block bởi vấn đề gì không? Cần ai hỗ trợ?' },
+      ]},
+      { title:'📌 BLOCKERS CẦN XỬ LÝ SAU STANDUP', type:'table',
+        headers:['Blocker','Người bị block','Người xử lý','Deadline'],
+        rows:[['','','',''],['',' ','','']]
+      },
+    ],
+    note:{ color:'#6B7280', bg:'#F1F5F9', text:'Standup không phải họp giải quyết vấn đề. Phát hiện blocker → note lại → giải quyết offline sau standup với người liên quan.' }
+  },
+
+  {
+    id:'test-case', tab:'sprint',
+    badge:'🧪 Test Case', badgeColor:'#1A7B8A',
+    title:'Test Case — Testing & UAT',
+    owner:'QA / BA', when:'Viết song song với Refining, thực hiện Tuần 2 sprint',
+    desc:'Template test case cho từng issue. Bao gồm happy case, edge case, và negative case.',
+    chips:[{l:'Gate 3',c:'#1A7B8A'},{l:'Luồng 2',c:'#2E75B6'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Jira Issue *', type:'input', req:true, placeholder:'[PROJECT-XXX] Tên issue' },
+        { label:'Tester *', type:'input', req:true, placeholder:'Tên QA/BA thực hiện' },
+        { label:'Ngày test', type:'input', placeholder:'DD/MM/YYYY' },
+        { label:'Môi trường', type:'options', opts:[{l:'Staging',c:'#2E75B6'},{l:'UAT',c:'#C55A11'},{l:'Production',c:'#B22222'}]},
+      ]},
+      { title:'✅ HAPPY CASE (Luồng chính)', type:'table',
+        headers:['TC#','Mô tả','Bước thực hiện','Expected Result','Actual Result','Pass/Fail'],
+        rows:[
+          ['TC01','[Mô tả test case]','1. ...\n2. ...\n3. ...','[Kết quả mong đợi]','','☐ Pass  ☐ Fail'],
+          ['TC02','','','','','☐ Pass  ☐ Fail'],
+          ['TC03','','','','','☐ Pass  ☐ Fail'],
+        ]
+      },
+      { title:'⚡ EDGE CASE & NEGATIVE CASE', type:'table',
+        headers:['TC#','Loại','Mô tả','Expected Result','Actual Result','Pass/Fail'],
+        rows:[
+          ['TC04','Edge','[Trường hợp biên]','','','☐ Pass  ☐ Fail'],
+          ['TC05','Negative','[Input không hợp lệ]','[Thông báo lỗi đúng]','','☐ Pass  ☐ Fail'],
+          ['TC06','Negative','','','','☐ Pass  ☐ Fail'],
+        ]
+      },
+      { title:'📊 KẾT QUẢ', fields:[
+        { label:'Tổng kết *', type:'options', req:true, opts:[{l:'✅ PASS — Sẵn sàng UAT',c:'#1F7A4D'},{l:'❌ FAIL — Cần Dev fix',c:'#B22222'}]},
+        { label:'Bug list (nếu FAIL)', type:'textarea', placeholder:'[BUG-1] Mô tả bug, bước tái hiện, severity\n[BUG-2] ...' },
+      ]},
+    ],
+    note:{ color:'#1A7B8A', bg:'#E0F2F1', text:'Test happy case TRƯỚC. Chỉ chuyển UAT khi happy case 100% pass. UAT phải xong trước Thứ 4 để kịp Golive Meeting Thứ 4 chiều.' }
+  },
+
+  {
+    id:'uat-confirm', tab:'sprint',
+    badge:'✅ UAT Confirmation', badgeColor:'#C55A11',
+    title:'UAT Confirmation — Xác nhận nghiệm thu',
+    owner:'Đại diện cty thành viên / Business', when:'T2–T3 Tuần 2 sprint',
+    desc:'Cty thành viên xác nhận sau khi test trên môi trường UAT. Cần xác nhận trước Golive Meeting.',
+    chips:[{l:'Cty thành viên',c:'#C55A11'},{l:'Trước T4 chiều',c:'#B22222'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Sprint / Release *', type:'input', req:true, placeholder:'Sprint N — vX.Y — Tháng M/YYYY' },
+        { label:'Người UAT *', type:'input', req:true, placeholder:'Tên + chức vụ đại diện cty thành viên' },
+        { label:'Ngày UAT', type:'input', placeholder:'DD/MM/YYYY → DD/MM/YYYY' },
+      ]},
+      { title:'📦 DANH SÁCH ISSUES ĐÃ TEST', type:'table',
+        headers:['Jira ID','Tên issue','Kết quả UAT','Ghi chú'],
+        rows:[
+          ['[ID]','[Tên issue]','☐ Pass  ☐ Fail',''],
+          ['[ID]','','☐ Pass  ☐ Fail',''],
+          ['[ID]','','☐ Pass  ☐ Fail',''],
+        ]
+      },
+      { title:'📝 FEEDBACK', fields:[
+        { label:'Kết quả tổng thể *', type:'options', req:true, opts:[{l:'✅ PASS — Đồng ý Golive',c:'#1F7A4D'},{l:'❌ FAIL — Cần fix trước Golive',c:'#B22222'},{l:'⚠️ Pass có điều kiện',c:'#C55A11'}]},
+        { label:'Feedback / Vấn đề', type:'textarea', placeholder:'Liệt kê các vấn đề phát hiện trong UAT (nếu có):\n• ' },
+        { label:'Yêu cầu bổ sung', type:'textarea', placeholder:'Các yêu cầu phát sinh thêm (nếu có) → sẽ tạo ticket mới, không block release này' },
+      ]},
+      { title:'✍️ XÁC NHẬN', fields:[
+        { label:'Xác nhận của *', type:'input', req:true, placeholder:'[Tên] — [Chức vụ] — [Công ty thành viên]' },
+        { label:'Ngày xác nhận', type:'input', placeholder:'DD/MM/YYYY' },
+        { label:'Hình thức', type:'options', opts:[{l:'Email',c:'#2E75B6'},{l:'Comment Jira',c:'#1A7B8A'},{l:'Chữ ký văn bản',c:'#5B2D8E'}]},
+      ]},
+    ],
+  },
+
+  // ─── RELEASE ────────────────────────────────────
+  {
+    id:'golive-checklist', tab:'release',
+    badge:'🏁 Golive Checklist', badgeColor:'#1F7A4D',
+    title:'Golive Checklist — Thứ 4 chiều cuối sprint',
+    owner:'PM (phê duyệt)', when:'Thứ 4 chiều · 30 phút',
+    desc:'PM review checklist đầy đủ trước khi phê duyệt deploy. Không deploy nếu còn item chưa tick.',
+    chips:[{l:'Gate 4',c:'#C55A11'},{l:'Bắt buộc 100%',c:'#B22222'}],
+    sections:[
+      { title:'📋 THÔNG TIN RELEASE', fields:[
+        { label:'Version *', type:'input', req:true, placeholder:'vX.Y.Z' },
+        { label:'Sprint / Release *', type:'input', req:true, placeholder:'Sprint N — Tháng M/YYYY' },
+        { label:'Ngày deploy dự kiến', type:'input', placeholder:'Thứ 6 DD/MM/YYYY' },
+        { label:'Người phê duyệt *', type:'input', req:true, placeholder:'PM: [Tên]' },
+      ]},
+      { title:'✅ CHECKLIST TRƯỚC DEPLOY', type:'checklist', items:[
+        { text:'Toàn bộ issues trong release đã PASS Testing + UAT', req:true, owner:'QA/BA' },
+        { text:'Không còn issue Critical / Blocker chưa xử lý', req:true, owner:'PM' },
+        { text:'Release Note đã viết và review xong', req:true, owner:'BA' },
+        { text:'Deployment Plan chi tiết đã chuẩn bị', req:true, owner:'DevOps' },
+        { text:'Rollback Plan đã sẵn sàng và verify', req:true, owner:'DevOps + Dev' },
+        { text:'DB migration script đã test trên Staging', req:true, owner:'Dev Lead' },
+        { text:'Build artifact đã tag version trên Git', req:true, owner:'Dev' },
+        { text:'Thông báo downtime gửi user/CX (nếu có downtime)', owner:'PM / CX' },
+        { text:'CEO confirm (nếu release ảnh hưởng core business)', owner:'CEO' },
+        { text:'PM phê duyệt Golive — ký xác nhận', req:true, owner:'PM' },
+      ]},
+      { title:'📝 GHI CHÚ', fields:[
+        { label:'Ghi chú deploy', type:'textarea', placeholder:'Thời gian deploy dự kiến, downtime ước tính, điểm đặc biệt cần lưu ý...' },
+      ]},
+    ],
+    note:{ color:'#B22222', bg:'#FDECEA', text:'Nếu bất kỳ item nào chưa tick → DỪNG, không deploy. Xử lý xong mới tiến hành.' }
+  },
+
+  {
+    id:'release-note', tab:'release',
+    badge:'📦 Release Note', badgeColor:'#1F7A4D',
+    title:'Release Note — Thông báo phiên bản mới',
+    owner:'BA + PM', when:'Chuẩn bị T5, gửi sau deploy T6',
+    desc:'Tổng hợp nội dung release gửi cho cty thành viên và lưu trên Wiki. Kèm theo mỗi lần golive.',
+    chips:[{l:'Gửi sau Golive',c:'#1F7A4D'},{l:'Lưu Wiki',c:'#2E75B6'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Version *', type:'input', req:true, placeholder:'vX.Y.Z' },
+        { label:'Ngày release *', type:'input', req:true, placeholder:'DD/MM/YYYY' },
+        { label:'Product Line', type:'options', opts:[{l:'Trading',c:'#1E3A5F'},{l:'Account',c:'#2E75B6'},{l:'Payment',c:'#1A7B8A'},{l:'Backoffice',c:'#C55A11'}]},
+        { label:'Người soạn *', type:'input', req:true, placeholder:'[Tên BA] + [Tên PM]' },
+      ]},
+      { title:'✨ TÍNH NĂNG MỚI / CẢI TIẾN', type:'table',
+        headers:['Jira ID','Mô tả','Impact','Hướng dẫn sử dụng'],
+        rows:[
+          ['[ID]','[Mô tả ngắn gọn tính năng]','High/Med/Low','[Link tài liệu hướng dẫn nếu có]'],
+          ['[ID]','','',''],
+        ]
+      },
+      { title:'🐛 BUG ĐÃ FIX', type:'table',
+        headers:['Jira ID','Mô tả bug','Module','Severity'],
+        rows:[
+          ['[ID]','[Mô tả bug đã fix]','[Module]','Critical/Major/Minor'],
+          ['[ID]','','',''],
+        ]
+      },
+      { title:'⚠️ BREAKING CHANGES / LƯU Ý', fields:[
+        { label:'Breaking changes', type:'textarea', placeholder:'Những thay đổi có thể ảnh hưởng đến workflow hiện tại của user:\n• (Nếu không có, ghi: Không có)' },
+        { label:'Hành động cần làm', type:'textarea', placeholder:'User/Admin cần thực hiện gì sau khi upgrade:\n• (Ví dụ: Clear cache, re-login, cập nhật cấu hình...)' },
+      ]},
+    ],
+    note:{ color:'#1F7A4D', bg:'#DCFCE7', text:'Gửi Release Note cho cty thành viên ngay sau khi Golive thành công. Lưu trên Wiki tại: BoltX > Releases > vX.Y.Z.' }
+  },
+
+  {
+    id:'deployment-plan', tab:'release',
+    badge:'🚀 Deployment Plan', badgeColor:'#1E3A5F',
+    title:'Deployment Plan & Rollback Plan',
+    owner:'DevOps + Dev', when:'Chuẩn bị ngày T5 trước deploy',
+    desc:'Kế hoạch triển khai chi tiết từng bước và kế hoạch rollback nếu có sự cố.',
+    chips:[{l:'Bắt buộc',c:'#B22222'},{l:'T5 cả ngày',c:'#1E3A5F'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Version *', type:'input', req:true, placeholder:'vX.Y.Z' },
+        { label:'Thời gian deploy *', type:'input', req:true, placeholder:'Thứ 6 DD/MM/YYYY — HH:MM (dự kiến)' },
+        { label:'Downtime dự kiến', type:'input', placeholder:'X phút (hoặc: Không có downtime)' },
+        { label:'DevOps phụ trách *', type:'input', req:true, placeholder:'Tên DevOps' },
+      ]},
+      { title:'📋 DEPLOYMENT STEPS', type:'table',
+        headers:['Bước','Mô tả','Lệnh / Action','Thời gian ước tính','Verify'],
+        rows:[
+          ['1','Backup DB hiện tại','[lệnh backup]','5 phút','Kiểm tra backup thành công'],
+          ['2','Deploy code mới','[lệnh deploy]','10 phút','App start OK, no error'],
+          ['3','Chạy DB migration','[lệnh migration]','5 phút','Migration ran: X rows affected'],
+          ['4','Smoke test','Kiểm tra manual','10 phút','Luồng chính hoạt động'],
+          ['5','Xác nhận với PM','Báo cáo kết quả','2 phút','PM confirm OK'],
+        ]
+      },
+      { title:'⏪ ROLLBACK PLAN', fields:[
+        { label:'Trigger rollback khi *', type:'textarea', req:true, placeholder:'Rollback ngay nếu:\n• Smoke test fail sau deploy\n• Error rate tăng đột biến > X%\n• Không thể login / core function fail' },
+        { label:'Rollback steps *', type:'textarea', req:true, placeholder:'1. Revert code về version trước: [lệnh]\n2. Rollback DB migration: [lệnh]\n3. Restart services: [lệnh]\n4. Verify: Smoke test lại version cũ\n5. Báo PM + team' },
+        { label:'Rollback time estimate', type:'input', placeholder:'Dự kiến X phút để rollback hoàn tất' },
+      ]},
+    ],
+    note:{ color:'#C55A11', bg:'#FCE4D6', text:'Rollback Plan phải được VERIFY trên Staging trước khi deploy Production. Không deploy nếu chưa test rollback.' }
+  },
+
+  {
+    id:'post-deploy', tab:'release',
+    badge:'📡 Post-Deploy Monitor', badgeColor:'#1F7A4D',
+    title:'Post-Deploy Monitoring — Sau Golive',
+    owner:'DevOps + Dev + PM', when:'Ngay sau deploy T6 + T2 sáng tuần sau',
+    desc:'Checklist theo dõi sau khi deploy lên Production. T6 ngay sau deploy và T2 sáng đầu sprint tiếp theo.',
+    chips:[{l:'1h sau deploy',c:'#B22222'},{l:'24h monitor',c:'#C55A11'},{l:'T2 sáng',c:'#1F7A4D'}],
+    sections:[
+      { title:'⚡ NGAY SAU DEPLOY (T6 — trong vòng 1 giờ)', type:'checklist', items:[
+        { text:'Smoke test: Luồng chính hoạt động đúng', req:true, owner:'Dev + QA' },
+        { text:'Kiểm tra application log: Không có ERROR mới', req:true, owner:'Dev' },
+        { text:'Kiểm tra DB: Data integrity sau migration', req:true, owner:'Dev' },
+        { text:'Kiểm tra performance: Response time trong ngưỡng', owner:'DevOps' },
+        { text:'PM xác nhận Golive thành công, gửi Release Note', req:true, owner:'PM' },
+        { text:'CX thông báo cho user: "Hệ thống đã được cập nhật"', owner:'CX / PTSP' },
+      ]},
+      { title:'📊 MONITOR 24H (T6 → T2 sáng)', fields:[
+        { label:'Error rate', type:'input', placeholder:'Baseline: X err/min → Thực tế sau deploy: Y err/min' },
+        { label:'Response time', type:'input', placeholder:'Baseline: Xms → Thực tế: Yms' },
+        { label:'User complaints', type:'input', placeholder:'Số lượng complaint qua CX/Zalo/Email: 0' },
+        { label:'Kết luận 24h', type:'options', opts:[{l:'✅ Stable — Tiến hành Planning bình thường',c:'#1F7A4D'},{l:'⚠️ Minor issues — Ghi nhận, xử lý sprint sau',c:'#C55A11'},{l:'🚨 Critical — Kích hoạt Luồng 1 Hotfix',c:'#B22222'}]},
+      ]},
+      { title:'📝 T2 SÁNG — KẾT QUẢ MONITOR', fields:[
+        { label:'Tổng hợp', type:'textarea', placeholder:'Tóm tắt 24h sau deploy:\n• Số lượng issue phát sinh: \n• Đã xử lý: \n• Còn tồn: \n• Đánh giá: Stable / Cần theo dõi tiếp' },
+      ]},
+    ],
+    note:{ color:'#1F7A4D', bg:'#DCFCE7', text:'Nếu phát hiện Critical bug T2 sáng → PM quyết định: Fix trước (Luồng 1, vài giờ) rồi Planning chiều, hoặc Planning trước rồi assign Hotfix song song.' }
+  },
+
+  // ─── BÁO CÁO ────────────────────────────────────
+  {
+    id:'sprint-report', tab:'report',
+    badge:'📊 Báo cáo Sprint', badgeColor:'#2E75B6',
+    title:'Báo cáo Sprint — PM → Ban lãnh đạo',
+    owner:'PM', when:'Thứ 2 sáng đầu sprint tiếp theo · 2 tuần/lần',
+    desc:'Tổng hợp kết quả sprint vừa kết thúc. Gửi Wiki + email BLĐ. Ngắn gọn, tối đa 1 trang.',
+    chips:[{l:'T2 sáng',c:'#2E75B6'},{l:'2 tuần/lần',c:'#1E3A5F'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Sprint *', type:'input', req:true, placeholder:'Sprint N — Tháng M/YYYY' },
+        { label:'Ngày báo cáo *', type:'input', req:true, placeholder:'DD/MM/YYYY (T2 sáng đầu sprint mới)' },
+        { label:'PM phụ trách *', type:'input', req:true, placeholder:'Tên PM' },
+      ]},
+      { title:'1. KẾT QUẢ SPRINT', fields:[
+        { label:'Issues completed *', type:'input', req:true, placeholder:'X / Y issues đã lên kế hoạch (đạt X%)' },
+        { label:'Release đã deploy *', type:'input', req:true, placeholder:'vX.Y.Z — deploy ngày DD/MM — Kết quả: Stable ✅' },
+        { label:'Bug sau release', type:'input', placeholder:'X bugs phát sinh sau golive (Critical: 0, Major: X, Minor: Y)' },
+        { label:'Issues trễ hạn', type:'input', placeholder:'X issues trễ — Lý do: ...' },
+      ]},
+      { title:'2. CHẤT LƯỢNG', fields:[
+        { label:'Testing pass rate', type:'input', placeholder:'X% issues pass testing lần đầu (mục tiêu: >80%)' },
+        { label:'UAT pass rate', type:'input', placeholder:'X% issues pass UAT lần đầu' },
+        { label:'Điểm cần cải thiện', type:'textarea', placeholder:'Ghi nhận điều cần cải thiện cho sprint sau:\n• ' },
+      ]},
+      { title:'3. RỦI RO & QUYẾT ĐỊNH CẦN BLĐ', fields:[
+        { label:'Rủi ro hiện tại', type:'textarea', placeholder:'(Nếu không có: Không có rủi ro đáng kể)\n• ' },
+        { label:'Cần BLĐ quyết định', type:'textarea', placeholder:'(Nếu không có: Không có)\n• ' },
+      ]},
+      { title:'4. KẾ HOẠCH SPRINT TIẾP THEO', fields:[
+        { label:'Sprint mới *', type:'input', req:true, placeholder:'Sprint N+1 — Mục tiêu: ...' },
+        { label:'Issues dự kiến', type:'textarea', req:true, placeholder:'• [ID] Tên issue (Complexity)\n• [ID] Tên issue (Complexity)\n• ...' },
+        { label:'Release dự kiến', type:'input', placeholder:'vX.Y.Z — Deploy ngày DD/MM/YYYY' },
+      ]},
+    ],
+    note:{ color:'#2E75B6', bg:'#DBEAFE', text:'Báo cáo tối đa 1 trang. BLĐ cần thấy 3 thứ: On track không, rủi ro gì, cần quyết định gì. Không cần đọc chi tiết từng ticket.' }
+  },
+
+  {
+    id:'monthly-report', tab:'report',
+    badge:'📈 Báo cáo Tháng', badgeColor:'#5B2D8E',
+    title:'Báo cáo Tháng — BoltX → Cty thành viên & BLĐ',
+    owner:'PM', when:'Thứ 2 sáng đầu Sprint 3 (đầu tháng mới)',
+    desc:'Tổng hợp 2 sprint = 1 tháng. Gửi BLĐ BoltX và đại diện cty thành viên. Là cơ sở cho báo cáo lên Ban KH-CL.',
+    chips:[{l:'1 lần/tháng',c:'#5B2D8E'},{l:'Đầu tháng mới',c:'#1E3A5F'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Tháng báo cáo *', type:'input', req:true, placeholder:'Tháng M/YYYY (Sprint N & N+1)' },
+        { label:'Ngày gửi *', type:'input', req:true, placeholder:'DD/MM/YYYY' },
+      ]},
+      { title:'1. KẾT QUẢ THÁNG', fields:[
+        { label:'Tổng issues *', type:'input', req:true, placeholder:'Planned: X | Completed: Y | Delayed: Z | Rejected: W' },
+        { label:'Releases *', type:'input', req:true, placeholder:'2 releases: vX.Y — DD/MM và vX.Z — DD/MM' },
+        { label:'Top 5 issues nổi bật', type:'textarea', placeholder:'1. [ID] Tên issue — Business impact: ...\n2. [ID] ...' },
+      ]},
+      { title:'2. CHẤT LƯỢNG', fields:[
+        { label:'Bug rate sau release', type:'input', placeholder:'Sprint 1: X bugs | Sprint 2: Y bugs — Tổng: Z (mục tiêu <5%)' },
+        { label:'UAT pass rate', type:'input', placeholder:'Sprint 1: X% | Sprint 2: Y%' },
+        { label:'Nhận xét chất lượng', type:'textarea', placeholder:'Xu hướng so với tháng trước, điểm đáng chú ý...' },
+      ]},
+      { title:'3. TỒN ĐỌNG & KẾ HOẠCH', fields:[
+        { label:'Issues tồn đọng', type:'textarea', placeholder:'• [ID] Tên issue — Lý do chưa xử lý — Kế hoạch: Sprint N+2\n• ' },
+        { label:'Kế hoạch tháng tới *', type:'textarea', req:true, placeholder:'Sprint N+2 (T1–T2 tháng M+1): [Mục tiêu chính]\nSprint N+3 (T3–T4 tháng M+1): [Mục tiêu chính]\n\nCam kết deliver:\n• [ID] Tên issue — Sprint N+2\n• [ID] Tên issue — Sprint N+3' },
+      ]},
+      { title:'4. ĐỀ XUẤT (nếu có)', fields:[
+        { label:'Đề xuất', type:'textarea', placeholder:'Thay đổi priority, resource cần bổ sung, thay đổi quy trình...\n(Nếu không có: Không có)' },
+      ]},
+    ],
+  },
+
+  // ─── HỌP ────────────────────────────────────────
+  {
+    id:'irm-agenda', tab:'meeting',
+    badge:'👥 IRM', badgeColor:'#5B2D8E',
+    title:'Issue Review Meeting — Agenda & Meeting Note',
+    owner:'PM BoltX (chủ trì)', when:'Thứ 2 sáng đầu Sprint 2 · 1 lần/tháng',
+    desc:'Template agenda và note cho IRM hàng tháng. Chuẩn bị T5–T6 sprint trước, gửi cho cty thành viên trước T6.',
+    chips:[{l:'120–150 phút',c:'#5B2D8E'},{l:'BoltX + Cty TV',c:'#1A7B8A'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Tháng *', type:'input', req:true, placeholder:'IRM Tháng M/YYYY — Họp ngày DD/MM/YYYY' },
+        { label:'Thành phần BoltX *', type:'input', req:true, placeholder:'PM, BA, Lead Dev (nếu cần), CX Lead' },
+        { label:'Thành phần cty TV *', type:'input', req:true, placeholder:'[Tên] — [Chức vụ] — [Công ty]' },
+        { label:'Người ghi note', type:'input', placeholder:'Tên' },
+      ]},
+      { title:'📌 AGENDA', type:'table',
+        headers:['Thời gian','Nội dung','Người trình bày','Kết quả/Quyết định'],
+        rows:[
+          ['10 phút','Khai mạc, điểm danh, mục tiêu buổi họp','PM BoltX',''],
+          ['20 phút','Review kết quả 2 sprint vừa qua','PM + BA',''],
+          ['30 phút','Review backlog tồn đọng — cập nhật trạng thái','BA + Đại diện cty',''],
+          ['20 phút','Tiếp nhận issue mới từ cty thành viên','BA + Đại diện cty',''],
+          ['30 phút','Thống nhất ưu tiên — chốt Sprint 3 & 4','PM + PO + Đại diện cty',''],
+          ['15 phút','Vấn đề khác / thay đổi nghiệp vụ','Tất cả',''],
+          ['15 phút','Tổng kết, action items, lịch IRM tháng sau','PM BoltX',''],
+        ]
+      },
+      { title:'📋 DANH SÁCH ISSUE ĐÃ CHỐT', type:'table',
+        headers:['Jira ID','Tên issue','Priority score','Sprint dự kiến','Ghi chú'],
+        rows:[
+          ['','','/ 12','Sprint 3',''],
+          ['','','/ 12','Sprint 3',''],
+          ['','','/ 12','Sprint 4',''],
+          ['','','/ 12','Sprint 4',''],
+        ]
+      },
+      { title:'✅ ACTION ITEMS', type:'table',
+        headers:['#','Action','Người thực hiện','Deadline'],
+        rows:[['1','PM cập nhật Jira: Fix Version + Sprint cho toàn bộ issues đã chốt','PM','Ngay sau họp'],['2','BA bắt đầu Refining Sprint 3 (từ T3)','BA','T3 cùng tuần'],['3','Gửi Meeting Note cho tất cả thành phần','PM','EOD hôm nay']]
+      },
+    ],
+    note:{ color:'#5B2D8E', bg:'#F3E8FF', text:'Meeting Note phải gửi trong ngày. PM cập nhật Jira ngay sau họp. BA bắt đầu Refining Sprint 3 từ ngày T3 cùng tuần.' }
+  },
+
+  {
+    id:'golive-meeting', tab:'meeting',
+    badge:'🏁 Golive Meeting', badgeColor:'#1F7A4D',
+    title:'Golive Meeting Note — Thứ 4 chiều cuối sprint',
+    owner:'PM (chủ trì + phê duyệt)', when:'Thứ 4 chiều · 30 phút',
+    desc:'Meeting note ngắn cho Golive Meeting. Kết hợp với Golive Checklist. PM ký phê duyệt cuối.',
+    chips:[{l:'30 phút',c:'#1F7A4D'},{l:'Thứ 4 chiều',c:'#C55A11'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Sprint / Version *', type:'input', req:true, placeholder:'Sprint N — vX.Y.Z' },
+        { label:'Ngày họp *', type:'input', req:true, placeholder:'Thứ 4 DD/MM/YYYY' },
+        { label:'Thành phần *', type:'input', req:true, placeholder:'PM, Dev Lead, QA, DevOps' },
+      ]},
+      { title:'📦 DANH SÁCH RELEASE', type:'table',
+        headers:['Jira ID','Tên issue','Testing','UAT','Sẵn sàng?'],
+        rows:[
+          ['[ID]','[Tên]','✅ Pass','✅ Pass','✅'],
+          ['[ID]','','✅ Pass','✅ Pass','✅'],
+          ['[ID]','','✅ Pass','✅ Pass','✅'],
+        ]
+      },
+      { title:'✅ QUYẾT ĐỊNH', fields:[
+        { label:'Kết quả checklist *', type:'options', req:true, opts:[{l:'✅ Đủ điều kiện Golive',c:'#1F7A4D'},{l:'❌ Chưa đủ — Dời lại',c:'#B22222'}]},
+        { label:'PM phê duyệt *', type:'input', req:true, placeholder:'[Tên PM] — Đồng ý Golive vX.Y.Z ngày DD/MM/YYYY' },
+        { label:'CEO confirm', type:'input', placeholder:'[Tên CEO] — Confirm (nếu release quan trọng) / Không cần (release thường)' },
+        { label:'Lịch deploy *', type:'input', req:true, placeholder:'Thứ 6 DD/MM/YYYY — HH:MM' },
+        { label:'Ghi chú', type:'input', placeholder:'Điểm đặc biệt cần lưu ý khi deploy...' },
+      ]},
+    ],
+  },
+
+];
+
+// ─── RENDER ──────────────────────────────────────
+function renderCards(tab) {
+  const filtered = tab === 'all' ? TEMPLATES : TEMPLATES.filter(t => t.tab === tab);
+  return filtered.map(t => `
+    <div class="tmpl-card" onclick="openTemplate('${t.id}')">
+      <div class="tc-header">
+        <div class="tc-badge" style="background:${t.badgeColor};">${t.badge}</div>
+        <div class="tc-title">${t.title}</div>
+        <div class="tc-meta">
+          ${t.chips.map(c => `<span class="tc-chip" style="background:${c.c}22;color:${c.c};border:1px solid ${c.c}44;">${c.l}</span>`).join('')}
+        </div>
+      </div>
+      <div class="tc-body">
+        <div class="tc-desc">${t.desc}</div>
+      </div>
+      <div class="tc-footer">
+        <span class="tc-owner" style="color:${t.badgeColor};">👤 ${t.owner}</span>
+        <span class="tc-when">⏰ ${t.when}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function buildModalContent(t) {
+  let html = '';
+  for (const sec of t.sections) {
+    html += `<div class="tmpl-section">`;
+    html += `<div class="ts-title">${sec.title}</div>`;
+
+    if (sec.type === 'table') {
+      html += `<div style="overflow-x:auto;"><table class="tmpl-table"><tr>${sec.headers.map(h=>`<th>${h}</th>`).join('')}</tr>`;
+      html += sec.rows.map(r => `<tr>${r.map(c=>`<td class="placeholder">${c||'&nbsp;'}</td>`).join('')}</tr>`).join('');
+      html += `</table></div>`;
+    } else if (sec.type === 'checklist') {
+      html += `<div class="checklist">`;
+      html += sec.items.map(item => `
+        <div class="cl-item">
+          <div class="cl-box"></div>
+          <div class="cl-text">
+            ${item.text}
+            ${item.req ? '<span class="req-mark"> *</span>' : ''}
+            <span style="font-size:10px;color:var(--sub);margin-left:6px;">[${item.owner}]</span>
+          </div>
+        </div>`).join('');
+      html += `</div>`;
+    } else if (sec.fields) {
+      html += `<div class="field-group">`;
+      for (const f of sec.fields) {
+        if (f.type === 'options') {
+          html += `<div class="field-row"><div class="field-label">${f.label}${f.req?'<span class="req">*</span>':''}</div><div class="opt-group">${f.opts.map(o=>`<span class="opt" style="background:${o.c}18;color:${o.c};border-color:${o.c}44;">${o.l}</span>`).join('')}</div></div>`;
+        } else if (f.type === 'textarea') {
+          html += `<div class="field-row full"><div class="field-label">${f.label}${f.req?'<span class="req">*</span>':''}</div><div class="field-input tall${f.req?' req-field':''}" style="white-space:pre-line;">${f.placeholder||''}</div></div>`;
+        } else {
+          html += `<div class="field-row"><div class="field-label">${f.label}${f.req?'<span class="req">*</span>':''}</div><div class="field-input${f.req?' req-field':''}">${f.placeholder||''}</div></div>`;
+        }
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+  if (t.note) {
+    html += `<div class="note-box" style="background:${t.note.bg};border-color:${t.note.color};color:${t.note.color};">💡 ${t.note.text}</div>`;
+  }
+  return html;
+}
+
+function openTemplate(id) {
+  const t = TEMPLATES.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('mTag').textContent = t.badge;
+  document.getElementById('mTag').style.color = t.badgeColor;
+  document.getElementById('mTitle').textContent = t.title;
+  document.getElementById('mTitle').style.color = t.badgeColor;
+  document.getElementById('mMeta').innerHTML =
+    `<span style="font-size:11px;background:${t.badgeColor}18;color:${t.badgeColor};border:1px solid ${t.badgeColor}44;border-radius:4px;padding:2px 8px;font-weight:700;">👤 ${t.owner}</span>` +
+    `<span style="font-size:11px;background:#F1F5F9;color:var(--gray);border-radius:4px;padding:2px 8px;">⏰ ${t.when}</span>`;
+  document.getElementById('mBody').innerHTML = buildModalContent(t);
+  document.getElementById('overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+function closeBg(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Tabs
+function renderTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('grid-' + tab).innerHTML = renderCards(tab);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => renderTab(btn.dataset.tab));
+});
+</script>
+
+<!-- Panels (content injected by JS) -->
+<div id="panel-all"     class="tab-panel active"><div class="tmpl-grid" id="grid-all"></div></div>
+<div id="panel-issue"   class="tab-panel"><div class="tmpl-grid" id="grid-issue"></div></div>
+<div id="panel-sprint"  class="tab-panel"><div class="tmpl-grid" id="grid-sprint"></div></div>
+<div id="panel-release" class="tab-panel"><div class="tmpl-grid" id="grid-release"></div></div>
+<div id="panel-report"  class="tab-panel"><div class="tmpl-grid" id="grid-report"></div></div>
+<div id="panel-meeting" class="tab-panel"><div class="tmpl-grid" id="grid-meeting"></div></div>
+
+</div><!-- end body -->
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <div class="modal-tag" id="mTag"></div>
+      <div class="modal-title" id="mTitle"></div>
+      <div class="modal-meta" id="mMeta"></div>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+  </div>
+</div>
+
+<script>
+// Init default tab
+renderTab('all');
+</script>
+
+</body>
+</html>
