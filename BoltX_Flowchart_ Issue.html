@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BoltX — Quy Trình Quản Lý Issue Luồng 2</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:   #1E3A5F;
+    --blue:   #2E75B6;
+    --teal:   #1A7B8A;
+    --green:  #1F7A4D;
+    --orange: #C55A11;
+    --red:    #B22222;
+    --gray:   #6B7280;
+    --lblue:  #D6E4F0;
+    --lgreen: #D9EAD3;
+    --lorange:#FCE4D6;
+    --lred:   #FDECEA;
+    --bg:     #EEF2F7;
+    --card:   #F0F4F8;
+    --border: #CBD5E1;
+  }
+  body {
+    font-family: 'Be Vietnam Pro', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    color: #1a1a1a;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(120deg, #1E3A5F 0%, #2a5298 100%);
+    padding: 22px 32px 18px;
+    color: #fff;
+  }
+  .header-eyebrow { font-size: 10px; opacity:.7; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; }
+  .header-title   { font-size: 22px; font-weight:900; letter-spacing:-.5px; }
+  .header-sub     { font-size: 13px; opacity:.8; margin-top:4px; }
+  .tabs { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+  .tab-btn {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .tab-btn:hover  { background: rgba(255,255,255,.15); }
+  .tab-btn.active { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.6); font-weight:800; }
+
+  /* ── LAYOUT ── */
+  .body-wrap { padding: 24px 28px; width:100%; }
+  .card { background:#fff; border-radius:14px; padding:24px; box-shadow:0 2px 16px rgba(0,0,0,.08); }
+
+  /* ── TAB PANELS ── */
+  .tab-panel { display:none; }
+  .tab-panel.active { display:flex; gap:20px; width:100%; align-items:flex-start; overflow-x:auto; }
+
+  /* ─────────────────────────────────────────
+     FLOW TAB
+  ───────────────────────────────────────── */
+  #panel-flow { flex-wrap: nowrap; }
+  .flow-card { flex: 0 0 560px; width:560px; }
+  .detail-card { flex:1; min-width:0; overflow:hidden; }
+
+  .hint-badge {
+    background: var(--lblue);
+    border-radius:6px;
+    padding:3px 10px;
+    font-size:11px;
+    color:var(--navy);
+    font-weight:700;
+    display:inline-block;
+    margin-bottom:20px;
+  }
+
+  /* swimlane */
+  .swimlane-wrap { display:flex; gap:0; }
+  .role-col { width:90px; flex-shrink:0; display:flex; flex-direction:column; }
+  .role-cell {
+    display:flex; align-items:center; justify-content:flex-end;
+    padding-right:10px;
+    border-right:3px solid;
+    font-size:9.5px; font-weight:700; text-align:right; line-height:1.3;
+  }
+  .flow-col { flex:1; display:flex; flex-direction:column; align-items:center; padding-left:16px; }
+
+  /* nodes */
+  .node {
+    border-radius:10px;
+    padding:10px 14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+    transition:transform .18s, box-shadow .18s;
+    user-select:none;
+    text-align:center;
+  }
+  .node:hover { transform:scale(1.04); box-shadow:0 4px 14px rgba(0,0,0,.18); }
+  .node.active { transform:scale(1.06); }
+  .node .nlabel { color:#fff; font-weight:700; font-size:12.5px; line-height:1.3; }
+  .node .nsub   { color:#fff; opacity:.82; font-size:10.5px; margin-top:2px; }
+
+  .node-start {
+    background:var(--orange);
+    border-radius:30px;
+    padding:8px 22px;
+    color:#fff; font-weight:900; font-size:13px;
+    box-shadow:0 2px 10px rgba(197,90,17,.35);
+    user-select:none;
+  }
+  .node-done {
+    border-radius:10px;
+    padding:10px 14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer;
+    text-align:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+    transition:transform .18s;
+  }
+  .node-done:hover { transform:scale(1.04); }
+
+  /* diamond */
+  .diamond-wrap { display:flex; flex-direction:column; align-items:center; }
+  .diamond-outer {
+    transform:rotate(45deg);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.10);
+    transition:box-shadow .18s;
+  }
+  .diamond-inner { transform:rotate(-45deg); text-align:center; padding:6px; }
+  .diamond-inner .dlabel { color:#fff; font-weight:700; font-size:11.5px; line-height:1.3; }
+
+  /* gate badge */
+  .gate-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    border-radius:20px; padding:5px 12px;
+    box-shadow:0 2px 6px rgba(0,0,0,.13);
+    margin-bottom:6px;
+  }
+  .gate-num {
+    background:rgba(255,255,255,.22); border-radius:50%;
+    width:20px; height:20px;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:11px; color:#fff;
+  }
+  .gate-label { color:#fff; font-weight:700; font-size:11px; }
+
+  /* arrows */
+  .arrow-down { display:flex; flex-direction:column; align-items:center; }
+  .arrow-down svg { flex-shrink:0; }
+  .arrow-label { font-size:10px; font-weight:700; }
+
+  /* branch row */
+  .branch-row { display:flex; align-items:flex-start; gap:24px; margin-top:4px; }
+  .reject-box {
+    background:var(--lred);
+    border:1px solid rgba(178,34,34,.35);
+    border-radius:8px; padding:6px 10px;
+    font-size:10.5px; color:var(--red); font-weight:700;
+    text-align:center; width:90px;
+  }
+  .reject-box span { font-weight:400; display:block; }
+
+  /* detail panel */
+  .detail-empty {
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    gap:10px; text-align:center; padding:16px 8px;
+  }
+  .detail-empty .de-icon { font-size:40px; }
+  .detail-empty .de-title { font-weight:800; color:var(--navy); font-size:16px; }
+  .detail-empty .de-sub   { color:var(--gray); font-size:13px; line-height:1.6; }
+  .step-list { width:100%; margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+  .step-list-item {
+    background:var(--card); border-left:4px solid; border-radius:8px;
+    padding:8px 14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:space-between;
+    transition:background .15s; text-align:left;
+  }
+  .step-list-item:hover { background:#e2e8f0; }
+  .sli-title { font-weight:700; font-size:12.5px; color:var(--navy); }
+  .sli-role  { font-size:11px; color:var(--gray); margin-top:1px; }
+  .sli-arrow { color:var(--gray); font-size:16px; }
+
+  .detail-content { display:none; }
+  .detail-content.active { display:block; }
+  .detail-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; }
+  .detail-title { font-size:18px; font-weight:900; margin-bottom:4px; }
+  .close-btn {
+    background:var(--card); border:none; border-radius:6px;
+    padding:4px 10px; cursor:pointer; font-size:18px; color:var(--gray);
+    font-family:inherit; line-height:1; flex-shrink:0;
+  }
+  .role-tag {
+    display:inline-block; border-radius:4px; padding:2px 7px;
+    font-size:10px; font-weight:800;
+  }
+  .section-label {
+    font-size:11px; font-weight:800; color:var(--navy);
+    text-transform:uppercase; letter-spacing:.5px;
+    margin-bottom:8px; margin-top:18px;
+  }
+  .activity-list { display:flex; flex-direction:column; gap:6px; }
+  .activity-item { display:flex; gap:10px; align-items:flex-start; }
+  .act-num {
+    width:20px; height:20px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:900; color:#fff; flex-shrink:0; margin-top:1px;
+  }
+  .act-text { font-size:13px; color:#374151; line-height:1.5; }
+  .doc-list { display:flex; flex-wrap:wrap; gap:6px; }
+  .doc-tag {
+    border-radius:6px; padding:4px 10px;
+    font-size:12px; font-weight:700;
+  }
+  .gate-note { font-size:11px; color:var(--gray); margin-top:6px; }
+
+  /* ─────────────────────────────────────────
+     SPRINT TAB
+  ───────────────────────────────────────── */
+  #panel-sprint { flex-direction:column; }
+  #panel-sprint .card { width:100%; }
+  .sprint-tab-title { font-size:17px; font-weight:900; color:var(--navy); margin-bottom:6px; }
+  .sprint-tab-sub   { font-size:13px; color:var(--gray); margin-bottom:24px; }
+  .week-label {
+    display:inline-block; border-radius:8px; padding:6px 16px;
+    color:#fff; font-weight:900; font-size:13px; margin-bottom:12px;
+  }
+  .days-row { display:flex; gap:12px; }
+  .day-col { flex:1; min-width:0; }
+  .day-header { font-weight:700; font-size:12px; color:var(--gray); margin-bottom:6px; text-align:center; }
+  .day-event {
+    border-radius:10px; padding:10px 12px; border:2px solid;
+  }
+  .day-event .ev-title { font-weight:700; font-size:12px; margin-bottom:4px; }
+  .day-event .ev-who   { font-size:10.5px; font-weight:700; color:var(--navy); margin-bottom:3px; }
+  .day-event .ev-note  { font-size:10.5px; color:var(--gray); line-height:1.4; }
+  .recurring-box { background:var(--card); border-radius:10px; padding:18px; margin-top:16px; }
+  .recurring-title { font-weight:900; font-size:13px; color:var(--navy); margin-bottom:12px; }
+  .recurring-row { display:flex; gap:12px; }
+  .recurring-item { flex:1; background:#fff; border-left:4px solid; border-radius:8px; padding:10px 14px; }
+  .ri-day   { font-size:10px; font-weight:800; margin-bottom:3px; }
+  .ri-title { font-weight:800; font-size:12px; color:var(--navy); margin-bottom:4px; }
+  .ri-who   { font-size:11px; color:var(--gray); }
+
+  /* ─────────────────────────────────────────
+     MEETING TAB
+  ───────────────────────────────────────── */
+  #panel-meeting { flex-direction:column; }
+  #panel-meeting .card { width:100%; }
+  .mtg-title { font-size:17px; font-weight:900; color:var(--navy); margin-bottom:6px; }
+  .mtg-sub   { font-size:13px; color:var(--gray); margin-bottom:24px; }
+  .prep-row  { display:flex; gap:16px; margin-bottom:24px; }
+  .prep-box  { flex:1; border-radius:10px; border:1.5px solid; padding:16px; }
+  .prep-title { font-weight:800; font-size:12.5px; margin-bottom:10px; }
+  .prep-item { display:flex; gap:8px; margin-bottom:5px; align-items:flex-start; }
+  .prep-check { width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; flex-shrink:0; margin-top:1px; }
+  .prep-text  { font-size:12px; color:#374151; }
+
+  .agenda-title { font-weight:900; font-size:13px; color:var(--navy); margin-bottom:12px; }
+  .agenda-list  { display:flex; flex-direction:column; }
+  .agenda-item  { display:flex; align-items:stretch; gap:0; }
+  .agenda-left  { width:46px; display:flex; flex-direction:column; align-items:center; }
+  .agenda-circle {
+    width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:900; font-size:10.5px; z-index:1; flex-shrink:0;
+  }
+  .agenda-line  { width:2px; flex:1; min-height:12px; opacity:.33; }
+  .agenda-body  { flex:1; padding-bottom:14px; padding-left:10px; }
+  .ag-label { font-weight:700; font-size:13px; color:var(--navy); }
+  .ag-who   { font-size:11px; font-weight:700; margin-top:1px; }
+  .ag-note  { font-size:11px; color:var(--gray); margin-top:2px; }
+
+  .matrix-box { background:var(--card); border-radius:10px; padding:18px; margin-top:16px; }
+  .matrix-title { font-weight:900; font-size:13px; color:var(--navy); margin-bottom:12px; }
+  .matrix-grid  { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .matrix-item  { background:#fff; border-radius:8px; padding:10px 14px; border:1px solid var(--border); }
+  .matrix-item-title { font-weight:800; font-size:12px; color:var(--navy); }
+  .matrix-item-desc  { font-size:11px; color:var(--gray); margin-top:2px; }
+  .matrix-bar   { display:flex; gap:4px; margin-top:6px; }
+  .matrix-bar-seg { flex:1; height:6px; border-radius:3px; }
+  .score-badges { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+  .score-badge  { border-radius:6px; padding:5px 12px; font-size:11px; font-weight:800; }
+
+  /* ─────────────────────────────────────────
+     REPORT TAB
+  ───────────────────────────────────────── */
+  #panel-report { flex-direction:column; }
+  #panel-report .card { width:100%; }
+  .rpt-title { font-size:17px; font-weight:900; color:var(--navy); margin-bottom:6px; }
+  .rpt-sub   { font-size:13px; color:var(--gray); margin-bottom:24px; }
+  .level-list { display:flex; flex-direction:column; gap:10px; margin-bottom:28px; }
+  .level-item { display:flex; gap:14px; align-items:center; border-radius:12px; border:2px solid; padding:14px 18px; }
+  .level-bar  { width:8px; height:60px; border-radius:4px; flex-shrink:0; }
+  .level-body { flex:1; }
+  .level-who  { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .level-from { font-weight:900; font-size:13px; }
+  .level-arr  { font-size:16px; color:var(--gray); }
+  .level-to   { font-weight:800; font-size:13px; color:var(--navy); }
+  .level-meta { display:flex; gap:8px; margin-bottom:5px; flex-wrap:wrap; }
+  .level-freq { border-radius:4px; padding:2px 8px; font-size:11px; font-weight:800; }
+  .level-chan { background:var(--card); border-radius:4px; padding:2px 8px; font-size:11px; color:var(--gray); }
+  .level-content { font-size:12px; color:#374151; }
+  .tmpl-title { font-weight:900; font-size:13px; color:var(--navy); margin-bottom:12px; }
+  .tmpl-list  { display:flex; flex-direction:column; gap:8px; }
+  .tmpl-item  { border-radius:10px; border:1.5px solid; padding:12px 16px; }
+  .tmpl-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .tmpl-num  {
+    width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:900; color:#fff;
+  }
+  .tmpl-name { font-weight:800; font-size:13px; }
+  .tmpl-body { padding-left:30px; display:flex; flex-direction:column; gap:3px; }
+  .tmpl-row  { font-size:12px; color:#374151; display:flex; gap:6px; }
+  .tmpl-dot  { font-weight:900; }
+
+  /* ── FOOTER LEGEND ── */
+  .legend { padding:12px 28px 24px; display:flex; gap:16px; flex-wrap:wrap; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--gray); }
+  .leg-solid  { width:24px; height:2px; }
+  .leg-dashed { width:24px; height:0; border-top:2px dashed; }
+  .leg-dot    { width:12px; height:12px; border-radius:50%; }
+
+  /* ── SPRINT CALENDAR (merged from Sprint Calendar v2) ── */
+  .week-block { margin-bottom: 28px; }
+  .week-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--navy); color: #fff;
+    border-radius: 8px; padding: 6px 16px;
+    font-size: 13px; font-weight: 900; margin-bottom: 16px;
+  }
+  .week-badge.w2 { background: var(--teal); }
+  .week-badge.w-pre { background: var(--purple, #5B2D8E); }
+  .day-row { display: flex; gap: 0; }
+  .day-col { flex: 1; min-width: 0; }
+  .day-col + .day-col { border-left: 1px solid var(--border); }
+  .day-header {
+    text-align: center; padding: 6px 4px 8px;
+    font-size: 11px; font-weight: 700; color: var(--sub, #64748B);
+    border-bottom: 1px solid var(--border); background: #fff; margin-bottom: 10px;
+  }
+  .day-header .day-name { font-size: 13px; font-weight: 800; color: var(--text); display: block; }
+  .day-header .day-note { font-size: 10px; color: var(--sub, #64748B); }
+  .day-events { padding: 0 8px 10px; display: flex; flex-direction: column; gap: 8px; }
+  .ev {
+    border-radius: 10px; padding: 12px 14px; border-left: 4px solid;
+    background: #fff; cursor: pointer;
+    transition: box-shadow .15s, transform .15s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .ev:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); transform: translateY(-1px); }
+  .ev .ev-title { font-size: 13px; font-weight: 800; margin-bottom: 3px; }
+  .ev .ev-who   { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .ev .ev-note  { font-size: 11px; color: var(--sub, #64748B); line-height: 1.5; }
+  .ev .ev-tag   { display: inline-block; border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 800; margin-top: 6px; }
+  .ev-purple { border-color: #5B2D8E; } .ev-purple .ev-title, .ev-purple .ev-who { color: #5B2D8E; }
+  .ev-navy   { border-color: var(--navy); } .ev-navy .ev-title, .ev-navy .ev-who { color: var(--navy); }
+  .ev-blue   { border-color: var(--blue); } .ev-blue .ev-title, .ev-blue .ev-who { color: var(--blue); }
+  .ev-teal   { border-color: var(--teal); } .ev-teal .ev-title, .ev-teal .ev-who { color: var(--teal); }
+  .ev-green  { border-color: var(--green); } .ev-green .ev-title, .ev-green .ev-who { color: var(--green); }
+  .ev-orange { border-color: var(--orange); } .ev-orange .ev-title, .ev-orange .ev-who { color: var(--orange); }
+  .ev-gray   { border-color: var(--gray); } .ev-gray .ev-title, .ev-gray .ev-who { color: var(--gray); }
+  .overlap-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #FFF3CD; border: 1px solid #FFC107;
+    border-radius: 20px; padding: 3px 10px;
+    font-size: 10px; font-weight: 700; color: #856404; margin-top: 6px;
+  }
+  .sc-recurring-box { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 16px 20px; margin-top: 4px; }
+  .sc-recurring-title { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 12px; }
+  .sc-recurring-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .sc-rec-item { flex: 1; min-width: 200px; border-left: 4px solid; border-radius: 8px; padding: 10px 14px; background: var(--card, #F8FAFC); }
+  .sc-rec-day   { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+  .sc-rec-title { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 3px; }
+  .sc-rec-who   { font-size: 11px; color: var(--sub, #64748B); }
+  .sc-divider { height: 1px; background: var(--border); margin: 24px 0; position: relative; }
+  .sc-divider-label {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    background: var(--bg, #F0F4F8); padding: 0 12px;
+    font-size: 10.5px; font-weight: 800; color: var(--sub, #64748B); white-space: nowrap;
+  }
+  /* Modal for sprint calendar */
+  .sc-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 200; align-items: center; justify-content: center; padding: 24px; }
+  .sc-overlay.active { display: flex; }
+  .sc-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,.25); animation: scsu .18s ease; }
+  @keyframes scsu { from { transform: translateY(14px); opacity: 0; } }
+  .sc-modal-header { padding: 22px 22px 14px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; border-radius: 16px 16px 0 0; }
+  .sc-modal-close { position: absolute; top: 14px; right: 14px; background: var(--bg); border: none; border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 16px; color: var(--gray); font-family: inherit; }
+  .sc-modal-when  { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 5px; }
+  .sc-modal-title { font-size: 20px; font-weight: 900; }
+  .sc-modal-body  { padding: 18px 22px 22px; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-eyebrow">BoltX Platform</div>
+  <div class="header-title">Quy Trình Quản Lý Issue — Luồng 2</div>
+  <div class="header-sub">Issue thường / Improvement &nbsp;·&nbsp; Complexity S–M &nbsp;·&nbsp; Sprint 2 tuần</div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="flow">🔄 Luồng xử lý</button>
+    <button class="tab-btn" data-tab="sprint">📅 Lịch Sprint</button>
+    <button class="tab-btn" data-tab="meeting">👥 Họp tháng</button>
+    <button class="tab-btn" data-tab="report">📊 Báo cáo</button>
+  </div>
+</div>
+
+<div class="body-wrap">
+
+  <!-- ══════════════════════════════════════════
+       TAB: LUỒNG XỬ LÝ
+  ══════════════════════════════════════════ -->
+  <div id="panel-flow" class="tab-panel active">
+
+    <!-- FLOWCHART CARD -->
+    <div class="card flow-card">
+      <div class="hint-badge">👆 Nhấn vào từng bước để xem chi tiết</div>
+
+      <div class="swimlane-wrap">
+
+        <!-- Role labels -->
+        <div class="role-col" id="roleCol">
+          <div class="role-cell" id="role0" style="border-color:#F59E0B33; color:#F59E0B;">KH / Sale / Internal</div>
+          <div class="role-cell" id="role1" style="border-color:#1A7B8A33; color:#1A7B8A;">CX / PTSP</div>
+          <div class="role-cell" id="role2" style="border-color:#2E75B633; color:#2E75B6;">BA / PO / PM</div>
+          <div class="role-cell" id="role3" style="border-color:#1E3A5F33; color:#1E3A5F;">DEV</div>
+          <div class="role-cell" id="role4" style="border-color:#1A7B8A33; color:#1A7B8A;">QA / BA / User</div>
+          <div class="role-cell" id="role5" style="border-color:#1F7A4D33; color:#1F7A4D;">PM / DevOps</div>
+        </div>
+
+        <!-- Flow column -->
+        <div class="flow-col">
+
+          <div id="lm0"></div><!-- START -->
+          <div data-zone="0" style="height:80px;display:flex;align-items:center;">
+            <div class="node-start">📨 Gửi Issue / Đề xuất</div>
+          </div>
+
+          <!-- arrow -->
+          <div class="arrow-down">
+            <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+          </div>
+
+          <div id="lm1"></div><!-- TIEP NHAN -->
+          <div data-zone="1" style="height:126px;display:flex;align-items:center;">
+            <div class="node" style="background:#1A7B8A;width:180px;" data-step="receive" onclick="toggleStep('receive')">
+              <span class="nlabel">Tiếp nhận &amp; Tạo Ticket Jira</span>
+              <span class="nsub">CX / PTSP</span>
+            </div>
+          </div>
+
+          <!-- arrow -->
+          <div class="arrow-down">
+            <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+          </div>
+
+          <div id="lm2"></div><!-- TRIAGE -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <div class="gate-badge" style="background:#2E75B6;">
+              <span class="gate-num">1</span>
+              <span class="gate-label">Gate 1: Triage</span>
+            </div>
+            <div class="node" style="background:#2E75B6;width:170px;" data-step="triage" onclick="toggleStep('triage')">
+              <span class="nlabel">Triage</span>
+              <span class="nsub">Đánh giá &amp; phân loại</span>
+            </div>
+          </div>
+
+          <!-- arrow -->
+          <div class="arrow-down" style="margin:4px 0;">
+            <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+          </div>
+
+          <!-- DIAMOND: Hợp lệ? — centered, REJECT absolute left -->
+          <div style="position:relative;display:flex;flex-direction:column;align-items:center;width:200px;">
+            <div class="diamond-wrap">
+              <div class="diamond-outer" style="width:94px;height:94px;background:#C55A11;">
+                <div class="diamond-inner"><div class="dlabel">Hợp lệ?</div></div>
+              </div>
+            </div>
+            <!-- REJECT: floats left, vertically centered on diamond -->
+            <div style="position:absolute;left:-110px;top:28px;display:flex;align-items:center;gap:4px;">
+              <div class="reject-box" style="width:88px;">✗ Reject<span>Closed + lý do</span></div>
+              <svg width="54" height="20"><line x1="54" y1="10" x2="8" y2="10" stroke="#B22222" stroke-width="2" stroke-dasharray="4,2"/><polygon points="8,5 8,15 0,10" fill="#B22222"/></svg>
+            </div>
+          </div>
+
+          <!-- PASS continues straight down -->
+          <div style="display:flex;flex-direction:column;align-items:center;">
+              <div class="arrow-down">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#1F7A4D" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#1F7A4D"/></svg>
+                <span class="arrow-label" style="color:#1F7A4D;">✓ PASS</span>
+              </div>
+
+              <!-- PLANNED -->
+              <div style="height:70px;display:flex;align-items:center;">
+                <div class="node" style="background:#1E3A5F;width:170px;" data-step="planned" onclick="toggleStep('planned')">
+                  <span class="nlabel">Planned</span>
+                  <span class="nsub">Vào Sprint / Release</span>
+                </div>
+              </div>
+
+              <!-- arrow -->
+              <div class="arrow-down">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+              </div>
+
+              <!-- REFINING -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <div class="gate-badge" style="background:#1F7A4D;">
+                  <span class="gate-num">2</span>
+                  <span class="gate-label">Gate 2: Ready for Dev</span>
+                </div>
+                <div class="node" style="background:#2E75B6;width:170px;" data-step="refining" onclick="toggleStep('refining')">
+                  <span class="nlabel">Refining</span>
+                  <span class="nsub">Làm rõ AC &amp; Scope</span>
+                </div>
+              </div>
+
+              <!-- arrow -->
+              <div class="arrow-down">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+              </div>
+
+              <div id="lm3"></div><!-- IN PROGRESS -->
+              <div style="height:168px;display:flex;align-items:center;">
+                <div class="node" style="background:#1E3A5F;width:170px;" data-step="inprogress" onclick="toggleStep('inprogress')">
+                  <span class="nlabel">In Progress</span>
+                  <span class="nsub">Coding + Unit Test</span>
+                </div>
+              </div>
+
+              <!-- arrow -->
+              <div class="arrow-down">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+              </div>
+
+              <div id="lm4"></div><!-- TESTING -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <div class="gate-badge" style="background:#1A7B8A;">
+                  <span class="gate-num">3</span>
+                  <span class="gate-label">Gate 3: Testing + UAT</span>
+                </div>
+                <div style="height:126px;display:flex;align-items:center;">
+                  <div class="node" style="background:#1A7B8A;width:170px;" data-step="testing" onclick="toggleStep('testing')">
+                    <span class="nlabel">Testing + UAT</span>
+                    <span class="nsub">Nghiệm thu</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- arrow -->
+              <div class="arrow-down" style="margin:4px 0;">
+                <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+              </div>
+
+              <!-- DIAMOND: Pass? — centered, FAIL absolute left -->
+              <div style="position:relative;display:flex;flex-direction:column;align-items:center;width:200px;">
+                <div class="diamond-wrap">
+                  <div class="diamond-outer" style="width:80px;height:80px;background:#1A7B8A;">
+                    <div class="diamond-inner"><div class="dlabel">Pass?</div></div>
+                  </div>
+                </div>
+                <!-- FAIL: floats left, vertically centered on diamond -->
+                <div style="position:absolute;left:-104px;top:22px;display:flex;align-items:center;gap:4px;">
+                  <div class="reject-box" style="width:80px;">✗ FAIL<span>Dev fix lại</span></div>
+                  <svg width="54" height="20"><line x1="54" y1="10" x2="8" y2="10" stroke="#B22222" stroke-width="2" stroke-dasharray="4,2"/><polygon points="8,5 8,15 0,10" fill="#B22222"/></svg>
+                </div>
+              </div>
+
+              <!-- PASS → RELEASE continues straight down -->
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                  <div class="arrow-down">
+                    <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#1F7A4D" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#1F7A4D"/></svg>
+                    <span class="arrow-label" style="color:#1F7A4D;">✓ PASS</span>
+                  </div>
+
+                  <div id="lm5"></div><!-- RELEASE -->
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                    <div class="gate-badge" style="background:#C55A11;">
+                      <span class="gate-num">4</span>
+                      <span class="gate-label">Gate 4: Ready Release</span>
+                    </div>
+                    <div style="height:90px;display:flex;align-items:center;">
+                      <div class="node" style="background:#1F7A4D;width:170px;" data-step="release" onclick="toggleStep('release')">
+                        <span class="nlabel">🚀 Release Production</span>
+                        <span class="nsub">Deploy + Smoke Test</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- arrow -->
+                  <div class="arrow-down">
+                    <svg width="20" height="42"><line x1="10" y1="0" x2="10" y2="32" stroke="#6B7280" stroke-width="2"/><polygon points="5,32 15,32 10,40" fill="#6B7280"/></svg>
+                  </div>
+
+                  <!-- DONE -->
+                  <div class="node" style="background:#1F7A4D;width:150px;" data-step="done" onclick="toggleStep('done')">
+                    <span class="nlabel">✅ Done</span>
+                    <span class="nsub">PM cập nhật Jira</span>
+                  </div>
+                </div>
+              </div><!-- end branch testing -->
+
+
+        </div><!-- end flow-col -->
+      </div><!-- end swimlane-wrap -->
+    </div><!-- end flow-card -->
+
+    <!-- DETAIL CARD -->
+    <div class="card detail-card" id="detailCard">
+
+      <!-- Empty state -->
+      <div class="detail-empty" id="detailEmpty">
+        <div class="de-icon">👆</div>
+        <div class="de-title">Nhấn vào bước trên lưu đồ</div>
+        <div class="de-sub">để xem chi tiết trách nhiệm,<br>dữ liệu bắt buộc và điều kiện chuyển bước</div>
+        <div class="step-list" id="stepList"></div>
+      </div>
+
+      <!-- Detail content (populated by JS) -->
+      <div class="detail-content" id="detailContent"></div>
+
+    </div><!-- end detail-card -->
+
+  </div><!-- end panel-flow -->
+
+
+  <!-- ══════════════════════════════════════════
+       TAB: SPRINT 2 TUẦN
+  ══════════════════════════════════════════ -->
+  <div id="panel-sprint" class="tab-panel">
+    <div style="width:100%;">
+<!-- ══════════════════════════════
+     TAB 1 — LỊCH SPRINT
+══════════════════════════════ -->
+
+
+  <p style="font-size:13px;color:var(--sub);margin-bottom:20px;">Mỗi tháng thực hiện 2 sprint, mỗi sprint kết thúc bằng 1 release lên Production</p>
+
+  <!-- ─── TUẦN 0 (TRƯỚC SPRINT) ─── -->
+  <div class="week-block">
+    <div class="week-badge w-pre">⚡ TUẦN TRƯỚC SPRINT — Chuẩn bị đầu vào</div>
+    <div class="day-row">
+
+      <!-- T2 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 2</span>
+          <span class="day-note">Cuối tháng trước</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-purple" onclick="openModal('irm')">
+            <div class="ev-title">👥 Issue Review Meeting</div>
+            <div class="ev-who">BoltX + Cty thành viên</div>
+            <div class="ev-note">Sync danh mục issue, thống nhất thứ tự ưu tiên cho tháng tới</div>
+            <span class="ev-tag" style="background:#F3E8FF;color:var(--purple);">120–150 phút</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- T3 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 3</span>
+          <span class="day-note">Ngay sau IRM</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-blue" onclick="openModal('refining_s1_a')">
+            <div class="ev-title">🔍 Refining Sprint 1 (phần 1)</div>
+            <div class="ev-who">BA + Dev</div>
+            <div class="ev-note">Làm rõ AC, scope, estimate cho issues Sprint 1 — dựa trên output IRM</div>
+            <span class="ev-tag" style="background:#DBEAFE;color:var(--blue);">30–60 phút/issue</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- T4 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 4</span>
+          <span class="day-note">Hoàn thành Refining</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-blue" onclick="openModal('refining_s1_b')">
+            <div class="ev-title">🔍 Refining Sprint 1 (phần 2)</div>
+            <div class="ev-who">BA + Dev</div>
+            <div class="ev-note">Hoàn tất toàn bộ issues Sprint 1 → Status "Ready for Dev". Chỉ đưa vào Planning khi đã Ready.</div>
+            <div class="overlap-badge">✅ Deadline: Xong trước Planning</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- T5–T6 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 5 – 6</span>
+          <span class="day-note">Buffer / Triage issue khẩn</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-gray" onclick="openModal('buffer')">
+            <div class="ev-title">🛡 Buffer & Triage khẩn</div>
+            <div class="ev-who">BA + PM</div>
+            <div class="ev-note">Xử lý issue phát sinh cuối kỳ, hotfix nếu có. Chuẩn bị slide Sprint Planning.</div>
+            <span class="ev-tag" style="background:#F1F5F9;color:var(--gray);">Linh hoạt</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-label">🚀 BẮT ĐẦU SPRINT</div></div>
+
+  <!-- ─── TUẦN 1 ─── -->
+  <div class="week-block">
+    <div class="week-badge">📅 TUẦN 1 — Planning & Phát triển</div>
+    <div class="day-row">
+
+      <!-- T2 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 2</span>
+          <span class="day-note">Ngày đầu sprint</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-green" onclick="openModal('monitor_am')">
+            <div class="ev-title">📡 Monitor sau Golive</div>
+            <div class="ev-who">DevOps + Dev + PM</div>
+            <div class="ev-note">Kiểm tra log, error rate, performance sau release sprint trước. Xác nhận Production ổn định.</div>
+            <span class="ev-tag" style="background:#DCFCE7;color:var(--green);">Sáng · ~1–2 tiếng</span>
+          </div>
+          <div class="ev ev-navy" onclick="openModal('planning')">
+            <div class="ev-title">📋 Sprint Planning</div>
+            <div class="ev-who">PM, BA, Dev Lead, QA</div>
+            <div class="ev-note">Chọn issues đã "Ready for Dev", commit Sprint Goal. Dev bắt đầu ngay sau Planning.</div>
+            <span class="ev-tag" style="background:#EEF2F7;color:var(--navy);">Chiều · 2–3 tiếng</span>
+          </div>
+          <div class="ev ev-gray" onclick="openModal('report')">
+            <div class="ev-title">📊 Báo cáo tiến độ sprint</div>
+            <div class="ev-who">PM → Ban lãnh đạo</div>
+            <div class="ev-note">Gửi báo cáo sprint vừa kết thúc: Issues completed, release đã golive, chất lượng, kế hoạch sprint tới.</div>
+            <span class="ev-tag" style="background:#F1F5F9;color:var(--gray);">Thứ 2 sáng · 2 tuần/lần</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- T3 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 3</span>
+          <span class="day-note">Dev tập trung code</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-navy" onclick="openModal('inprogress')">
+            <div class="ev-title">⚙️ In Progress</div>
+            <div class="ev-who">Dev</div>
+            <div class="ev-note">Coding + Unit Test. Log thời gian trên Jira. Daily standup 15 phút sáng.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- T4 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 4</span>
+          <span class="day-note">Dev tập trung code</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-navy" onclick="openModal('inprogress')">
+            <div class="ev-title">⚙️ In Progress</div>
+            <div class="ev-who">Dev</div>
+            <div class="ev-note">Coding + Unit Test + Code Review nội bộ. Mục tiêu: Dev Done toàn bộ cuối tuần 1.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- T5–T6 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 5 – 6</span>
+          <span class="day-note">Dev + Báo cáo tuần</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-navy" onclick="openModal('inprogress')">
+            <div class="ev-title">⚙️ In Progress</div>
+            <div class="ev-who">Dev</div>
+            <div class="ev-note">Coding + Unit Test + Code Review. Mục tiêu: Dev Done toàn bộ issues cuối tuần 1.</div>
+          </div>
+          <div class="ev ev-gray" onclick="openModal('report')">
+            <div class="ev-title">📊 Báo cáo tiến độ sprint</div>
+            <div class="ev-who">PM → Ban lãnh đạo</div>
+            <div class="ev-note">Cập nhật Wiki + gửi email sau mỗi sprint. Kết quả sprint, release, kế hoạch sprint tới.</div>
+            <span class="ev-tag" style="background:#F1F5F9;color:var(--gray);">Thứ 2 · Sau sprint 1 tuần</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-label">🧪 TUẦN 2 — Kiểm thử & Release</div></div>
+
+  <!-- ─── TUẦN 2 ─── -->
+  <div class="week-block">
+    <div class="week-badge w2">✅ TUẦN 2 — Testing, UAT & Golive</div>
+    <div class="day-row">
+
+      <!-- T2–T3 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 2 – 3</span>
+          <span class="day-note">Testing + Refining S2</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-teal" onclick="openModal('testing')">
+            <div class="ev-title">🧪 Testing + UAT</div>
+            <div class="ev-who">QA/BA + User/CX/PTSP</div>
+            <div class="ev-note">Happy case → Edge case → Negative. UAT với đại diện cty thành viên. Nghiệm thu và xác nhận kết quả.</div>
+            <span class="ev-tag" style="background:#E0F2F1;color:var(--teal);">T2 sáng → T3 chiều</span>
+          </div>
+          <div class="ev ev-blue" onclick="openModal('refining_s2')">
+            <div class="ev-title">🔍 Refining Sprint 2</div>
+            <div class="ev-who">BA + Dev</div>
+            <div class="ev-note">Dev đã Done → tranh thủ refine issues Sprint 2 song song với QA testing. Hoàn tất trước cuối T3.</div>
+            <div class="overlap-badge">⚡ Dev Done → Refine luôn</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- T4 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 4</span>
+          <span class="day-note">Fix bug + Golive Meeting</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-orange" onclick="openModal('bugfix')">
+            <div class="ev-title">🐛 Bug Fix + Re-test</div>
+            <div class="ev-who">Dev + QA/BA</div>
+            <div class="ev-note">Fix bug Critical từ Testing/UAT. QA re-test ngay. Confirm Pass trước Golive Meeting chiều.</div>
+            <span class="ev-tag" style="background:#FCE4D6;color:var(--orange);">Sáng · Nếu FAIL</span>
+          </div>
+          <div class="ev ev-green" onclick="openModal('golive_mtg')">
+            <div class="ev-title">🏁 Golive Meeting</div>
+            <div class="ev-who">PM, Dev Lead, QA</div>
+            <div class="ev-note">Review checklist, PM phê duyệt release. CEO confirm nếu cần. Chốt danh sách issues sẽ deploy.</div>
+            <span class="ev-tag" style="background:#DCFCE7;color:var(--green);">Chiều · 30 phút</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- T5 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 5</span>
+          <span class="day-note">Phê duyệt release</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-green" onclick="openModal('golive_mtg')">
+            <div class="ev-title">🏁 Golive Meeting</div>
+            <div class="ev-who">PM, Dev Lead, QA</div>
+            <div class="ev-note">Review checklist 10 hạng mục, PM phê duyệt release. CEO confirm nếu release quan trọng.</div>
+            <span class="ev-tag" style="background:#DCFCE7;color:var(--green);">30 phút · Thứ 5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- T6 -->
+      <div class="day-col">
+        <div class="day-header">
+          <span class="day-name">Thứ 6</span>
+          <span class="day-note">Release day</span>
+        </div>
+        <div class="day-events">
+          <div class="ev ev-green" onclick="openModal('release')">
+            <div class="ev-title">🚀 Release Production</div>
+            <div class="ev-who">DevOps + Dev</div>
+            <div class="ev-note">Deploy + Smoke Test ngay sau deploy + Monitor 24h. Thông báo cho cty thành viên.</div>
+            <span class="ev-tag" style="background:#DCFCE7;color:var(--green);">Thứ 2 tuần sau sprint</span>
+          </div>
+          <div class="ev ev-gray" onclick="openModal('report')">
+            <div class="ev-title">📊 Báo cáo tiến độ sprint</div>
+            <div class="ev-who">PM → Ban lãnh đạo</div>
+            <div class="ev-note">Tổng hợp kết quả sprint: Issues completed, release đã deploy, kế hoạch sprint tới.</div>
+            <span class="ev-tag" style="background:#F1F5F9;color:var(--gray);">Thứ 2 · Sau sprint 1 tuần</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── RECURRING ─── -->
+  <div class="recurring-box">
+    <div class="recurring-title">⏰ Sự kiện cố định hàng tuần</div>
+    <div class="recurring-row">
+      <div class="rec-item" style="border-color:var(--purple);">
+        <div class="rec-day" style="color:var(--purple);">Thứ 2 cuối tháng</div>
+        <div class="rec-title">Issue Review Meeting</div>
+        <div class="rec-who">BoltX + Cty thành viên · 120–150 phút</div>
+      </div>
+      <div class="rec-item" style="border-color:var(--green);">
+        <div class="rec-day" style="color:var(--green);">Thứ 4 cuối sprint</div>
+        <div class="rec-title">Golive Approval Meeting</div>
+        <div class="rec-who">PM, Dev Lead, QA · 30 phút</div>
+      </div>
+      <div class="rec-item" style="border-color:var(--gray);">
+        <div class="rec-day" style="color:var(--gray);">Thứ 2 tuần sau sprint</div>
+        <div class="rec-title">Báo cáo tiến độ sprint</div>
+        <div class="rec-who">PM → Ban lãnh đạo · 2 tuần/lần · Wiki + Email</div>
+      </div>
+      <div class="rec-item" style="border-color:var(--green);">
+        <div class="rec-day" style="color:var(--green);">Thứ 6 cuối sprint</div>
+        <div class="rec-title">Release Production</div>
+        <div class="rec-who">DevOps + Dev · Sau Golive Meeting</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ─── CHUỖI LIÊN TỤC CẢ THÁNG ─── -->
+  <div style="margin-top:8px;">
+    <div style="background:linear-gradient(135deg,#F8F0FF,#fff);border:1.5px solid #DDD0F0;border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:800;color:var(--purple);margin-bottom:12px;">🔑 Chuỗi sự kiện liên tục: Tháng N-1 → Tháng N → Tháng N+1</div>
+      <div style="overflow-x:auto;padding-bottom:6px;">
+        <div style="display:flex;align-items:flex-end;gap:4px;min-width:900px;">
+
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="font-size:9px;font-weight:800;color:var(--sub);margin-bottom:4px;text-transform:uppercase;">Cuối tháng N-1</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="background:var(--purple);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">👥 IRM</div>
+              <div style="background:var(--blue);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🔍 Refining S1<br><span style="font-weight:400;opacity:.85;">T3–T5</span></div>
+            </div>
+          </div>
+
+          <div style="color:var(--orange);font-size:20px;font-weight:900;padding-bottom:8px;">→</div>
+
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="font-size:9px;font-weight:800;color:var(--blue);margin-bottom:4px;text-transform:uppercase;">Sprint 1 · Tuần 1</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="background:#fff;border:1.5px solid var(--green);color:var(--green);border-radius:7px;padding:4px 10px;font-size:9.5px;font-weight:700;text-align:center;">📡 Monitor sáng T2</div>
+              <div style="background:var(--navy);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">📋 Planning<br><span style="font-weight:400;opacity:.85;">T2 chiều</span></div>
+              <div style="background:var(--navy);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">⚙️ In Progress<br><span style="font-weight:400;opacity:.85;">T3–T6</span></div>
+            </div>
+          </div>
+
+          <div style="color:var(--orange);font-size:20px;font-weight:900;padding-bottom:8px;">→</div>
+
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="font-size:9px;font-weight:800;color:var(--teal);margin-bottom:4px;text-transform:uppercase;">Sprint 1 · Tuần 2</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="background:var(--teal);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🧪 Testing+UAT<br><span style="font-weight:400;opacity:.85;">T2–T3</span></div>
+              <div style="background:var(--blue);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🔍 Refining S2<br><span style="font-weight:400;opacity:.85;">T2–T3 song song</span></div>
+              <div style="background:var(--orange);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🐛 Bug Fix<br><span style="font-weight:400;opacity:.85;">T4 sáng</span></div>
+              <div style="background:var(--green);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🏁 Golive Mtg<br><span style="font-weight:400;opacity:.85;">T4 chiều</span></div>
+              <div style="background:var(--navy);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">📦 Gói nâng cấp<br><span style="font-weight:400;opacity:.85;">T5</span></div>
+              <div style="background:var(--green);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🚀 Golive<br><span style="font-weight:400;opacity:.85;">T6</span></div>
+            </div>
+          </div>
+
+          <div style="color:var(--orange);font-size:20px;font-weight:900;padding-bottom:8px;">→</div>
+
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="font-size:9px;font-weight:800;color:var(--blue);margin-bottom:4px;text-transform:uppercase;">Sprint 2 · Tuần 3</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="background:var(--purple);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">👥 IRM N+1<br><span style="font-weight:400;opacity:.85;">T2 sáng</span></div>
+              <div style="background:#fff;border:1.5px solid var(--green);color:var(--green);border-radius:7px;padding:4px 10px;font-size:9.5px;font-weight:700;text-align:center;">📡 Monitor sáng T2</div>
+              <div style="background:var(--navy);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">📋 Planning S2<br><span style="font-weight:400;opacity:.85;">T2 chiều</span></div>
+              <div style="background:var(--navy);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">⚙️ In Progress<br><span style="font-weight:400;opacity:.85;">T3–T6</span></div>
+            </div>
+          </div>
+
+          <div style="color:var(--orange);font-size:20px;font-weight:900;padding-bottom:8px;">→</div>
+
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="font-size:9px;font-weight:800;color:var(--teal);margin-bottom:4px;text-transform:uppercase;">Sprint 2 · Tuần 4</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="background:var(--teal);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🧪 Testing+UAT<br><span style="font-weight:400;opacity:.85;">T2–T3</span></div>
+              <div style="background:var(--blue);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🔍 Refining S3<br><span style="font-weight:400;opacity:.85;">T2–T3 song song</span></div>
+              <div style="background:var(--green);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🏁 Golive Mtg T4<br>📦 Gói nâng cấp T5</div>
+              <div style="background:var(--green);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🚀 Golive + 📊 BC tháng<br><span style="font-weight:400;opacity:.85;">T6</span></div>
+            </div>
+          </div>
+
+          <div style="color:var(--orange);font-size:20px;font-weight:900;padding-bottom:8px;">→</div>
+
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="font-size:9px;font-weight:800;color:var(--sub);margin-bottom:4px;text-transform:uppercase;">Tháng N+1…</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="background:var(--blue);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">🔍 Refining S3<br><span style="font-weight:400;opacity:.85;">Đã ready</span></div>
+              <div style="background:var(--navy);color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;text-align:center;line-height:1.3;">📋 Planning S3<br><span style="font-weight:400;opacity:.85;">T2 tuần 5</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint 2 khác biệt note -->
+    <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px 20px;">
+      <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:12px;">⚡ Sprint 2 — 2 điểm khác biệt so với Sprint 1</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:220px;background:var(--bg);border-radius:8px;padding:12px 14px;border-left:4px solid var(--purple);">
+          <div style="font-size:12px;font-weight:800;color:var(--purple);margin-bottom:5px;">👥 Thứ 2 sáng đầu Sprint 2 — IRM + Báo cáo + Planning</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.5;">T2 sáng: Monitor → IRM tháng N+1 → Báo cáo sprint. T2 chiều: Planning S2. BA tham dự IRM sáng, planning chiều, Refining S3 từ T3.</div>
+        </div>
+        <div style="flex:1;min-width:220px;background:var(--bg);border-radius:8px;padding:12px 14px;border-left:4px solid var(--green);">
+          <div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:5px;">📊 Báo cáo tháng — Thứ 2 đầu Sprint 3</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.5;">Thứ 2 đầu Sprint 3 (= đầu tháng N+1): Báo cáo tháng N tổng hợp 2 sprint = 1 tháng gửi BLĐ và cty thành viên. PM chuẩn bị báo cáo tháng trong T5–T6 cuối Sprint 2.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</div><!-- end panel-sprint -->
+    </div>
+  </div><!-- end panel-sprint -->
+
+
+  <!-- ══════════════════════════════════════════
+       TAB: HỌP THÁNG
+  ══════════════════════════════════════════ -->
+  <div id="panel-meeting" class="tab-panel">
+    <div class="card">
+      <div class="mtg-title">👥 Issue Review Meeting — 1 tháng/lần</div>
+      <div class="mtg-sub">Thứ 2 sáng đầu Sprint 2 &nbsp;·&nbsp; 120–150 phút &nbsp;·&nbsp; BoltX + Công ty thành viên</div>
+
+      <!-- Position note -->
+      <div style="display:flex;gap:8px;align-items:center;background:#F8F0FF;border:1.5px solid #DDD0F0;border-radius:8px;padding:10px 14px;margin-bottom:20px;flex-wrap:wrap;">
+        <div style="display:flex;gap:4px;align-items:center;font-size:11px;font-weight:700;color:#5B2D8E;">📅 Vị trí trong lịch Thứ 2 đầu Sprint 2:</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span style="background:#1F7A4D22;color:#1F7A4D;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">📡 Monitor sau Golive</span>
+          <span style="color:#C55A11;font-weight:900;">→</span>
+          <span style="background:#5B2D8E22;color:#5B2D8E;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:800;">👥 IRM (sáng)</span>
+          <span style="color:#C55A11;font-weight:900;">→</span>
+          <span style="background:#6B728022;color:#6B7280;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">📊 Báo cáo sprint</span>
+          <span style="color:#C55A11;font-weight:900;">→</span>
+          <span style="background:#1E3A5F22;color:#1E3A5F;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">📋 Planning S2 (chiều)</span>
+        </div>
+      </div>
+
+      <!-- Prep -->
+      <div class="prep-row">
+        <div class="prep-box" style="background:#2E75B610;border-color:#2E75B633;">
+          <div class="prep-title" style="color:#2E75B6;">📋 BoltX chuẩn bị (T5–T6 sprint trước)</div>
+          <div class="prep-item"><span class="prep-check" style="background:#2E75B6;">✓</span><span class="prep-text">Export Jira: toàn bộ issue mở</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#2E75B6;">✓</span><span class="prep-text">Tổng hợp kết quả 2 sprint vừa qua (= 1 tháng)</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#2E75B6;">✓</span><span class="prep-text">Slide tóm tắt (max 10 slide)</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#2E75B6;">✓</span><span class="prep-text">Gửi agenda + tài liệu cho cty thành viên trước T6</span></div>
+        </div>
+        <div class="prep-box" style="background:#1A7B8A10;border-color:#1A7B8A33;">
+          <div class="prep-title" style="color:#1A7B8A;">📋 Công ty thành viên chuẩn bị</div>
+          <div class="prep-item"><span class="prep-check" style="background:#1A7B8A;">✓</span><span class="prep-text">Danh sách issue mới (theo template)</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#1A7B8A;">✓</span><span class="prep-text">Feedback issue đã deliver</span></div>
+          <div class="prep-item"><span class="prep-check" style="background:#1A7B8A;">✓</span><span class="prep-text">Thay đổi nghiệp vụ cần thông báo</span></div>
+        </div>
+      </div>
+
+      <!-- Agenda -->
+      <div class="agenda-title">📌 Agenda buổi họp</div>
+      <div class="agenda-list">
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#6B7280;">10'</div><div class="agenda-line" style="background:#6B7280;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Khai mạc &amp; mục tiêu</div><div class="ag-who" style="color:#6B7280;">PM BoltX</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#2E75B6;">20'</div><div class="agenda-line" style="background:#2E75B6;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Review kết quả 2 sprint vừa qua</div><div class="ag-who" style="color:#2E75B6;">PM + BA</div><div class="ag-note">Issues done/delayed, release đã golive, quality metrics, báo cáo sprint</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#1E3A5F;">30'</div><div class="agenda-line" style="background:#1E3A5F;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Review backlog hiện tại</div><div class="ag-who" style="color:#1E3A5F;">BA + Đại diện cty</div><div class="ag-note">Đánh giá từng issue tồn đọng, cập nhật trạng thái</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#1A7B8A;">20'</div><div class="agenda-line" style="background:#1A7B8A;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Tiếp nhận issue mới</div><div class="ag-who" style="color:#1A7B8A;">BA + Đại diện cty</div><div class="ag-note">Triage nhanh, ước lượng sơ bộ</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#C55A11;">30'</div><div class="agenda-line" style="background:#C55A11;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Thống nhất ưu tiên tháng mới</div><div class="ag-who" style="color:#C55A11;">PM + PO + Đại diện cty</div><div class="ag-note">Xếp hạng theo điểm, chốt issue cho Sprint 3 &amp; 4 tháng tới, cam kết lịch deliver</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#6B7280;">15'</div><div class="agenda-line" style="background:#6B7280;"></div></div>
+          <div class="agenda-body"><div class="ag-label">Vấn đề khác / thay đổi nghiệp vụ</div><div class="ag-who" style="color:#6B7280;">CEO / Deputy (nếu cần)</div></div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-left"><div class="agenda-circle" style="background:#1F7A4D;">15'</div></div>
+          <div class="agenda-body"><div class="ag-label">Tổng kết &amp; Action items</div><div class="ag-who" style="color:#1F7A4D;">PM BoltX</div><div class="ag-note">Chốt queue Refining S3, lịch IRM tháng sau (= đầu Sprint 4), Planning S2 chiều nay</div></div>
+        </div>
+      </div>
+
+      <!-- Priority matrix -->
+      <div class="matrix-box">
+        <div class="matrix-title">🎯 Ma trận ưu tiên issue (tổng điểm tối đa: 12)</div>
+        <div class="matrix-grid">
+          <div class="matrix-item">
+            <div class="matrix-item-title">Business Impact</div>
+            <div class="matrix-item-desc">High = 3, Medium = 2, Low = 1</div>
+            <div class="matrix-bar">
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#1F7A4D;"></div>
+            </div>
+          </div>
+          <div class="matrix-item">
+            <div class="matrix-item-title">Urgency</div>
+            <div class="matrix-item-desc">Tháng này = 3, 1–2 tháng = 2, Defer = 1</div>
+            <div class="matrix-bar">
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#1F7A4D;"></div>
+            </div>
+          </div>
+          <div class="matrix-item">
+            <div class="matrix-item-title">Compliance / Risk</div>
+            <div class="matrix-item-desc">Pháp lý = 3, Vận hành = 2, Không = 1</div>
+            <div class="matrix-bar">
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#1F7A4D;"></div>
+            </div>
+          </div>
+          <div class="matrix-item">
+            <div class="matrix-item-title">Effort (đảo ngược)</div>
+            <div class="matrix-item-desc">S = 3, M = 2, L → Luồng 3</div>
+            <div class="matrix-bar">
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#2E75B633;"></div>
+              <div class="matrix-bar-seg" style="background:#1F7A4D;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="score-badges">
+          <div class="score-badge" style="background:#1F7A4D18;border:1px solid #1F7A4D44;color:#1F7A4D;">≥ 9 : Ưu tiên cao nhất</div>
+          <div class="score-badge" style="background:#C55A1118;border:1px solid #C55A1144;color:#C55A11;">6–8 : Tháng sau</div>
+          <div class="score-badge" style="background:#6B728018;border:1px solid #6B728044;color:#6B7280;">&lt; 6 : Backlog</div>
+        </div>
+      </div>
+    </div>
+  </div><!-- end panel-meeting -->
+
+
+  <!-- ══════════════════════════════════════════
+       TAB: BÁO CÁO
+  ══════════════════════════════════════════ -->
+  <div id="panel-report" class="tab-panel">
+    <div class="card">
+      <div class="rpt-title">📊 Cơ chế Báo cáo Công việc</div>
+      <div class="rpt-sub">Phân tầng từ vận hành đến Ban lãnh đạo — mỗi cấp nhận đúng thông tin cần thiết</div>
+
+      <!-- Levels -->
+      <div class="level-list">
+        <div class="level-item" style="background:#6B72800A;border-color:#6B728030;">
+          <div class="level-bar" style="background:#6B7280;"></div>
+          <div class="level-body">
+            <div class="level-who"><span class="level-from" style="color:#6B7280;">Dev / QA / BA</span><span class="level-arr">→</span><span class="level-to">PM</span></div>
+            <div class="level-meta"><span class="level-freq" style="background:#6B728022;color:#6B7280;">⏱ Realtime</span><span class="level-chan">📤 Jira comment</span></div>
+            <div class="level-content">Cập nhật status ticket, log giờ, báo blocker</div>
+          </div>
+        </div>
+        <div class="level-item" style="background:#2E75B60A;border-color:#2E75B630;">
+          <div class="level-bar" style="background:#2E75B6;"></div>
+          <div class="level-body">
+            <div class="level-who"><span class="level-from" style="color:#2E75B6;">PM (tổng hợp)</span><span class="level-arr">→</span><span class="level-to">Ban lãnh đạo nội bộ</span></div>
+            <div class="level-meta"><span class="level-freq" style="background:#2E75B622;color:#2E75B6;">⏱ 2 tuần/lần (Thứ 2 sau sprint)</span><span class="level-chan">📤 Wiki + Email</span></div>
+            <div class="level-content">Kết quả sprint, issue done/block, rủi ro, kế hoạch tuần tới</div>
+          </div>
+        </div>
+        <div class="level-item" style="background:#1A7B8A0A;border-color:#1A7B8A30;">
+          <div class="level-bar" style="background:#1A7B8A;"></div>
+          <div class="level-body">
+            <div class="level-who"><span class="level-from" style="color:#1A7B8A;">BoltX</span><span class="level-arr">→</span><span class="level-to">Công ty thành viên</span></div>
+            <div class="level-meta"><span class="level-freq" style="background:#1A7B8A22;color:#1A7B8A;">⏱ 1 tháng/lần</span><span class="level-chan">📤 Họp + Email</span></div>
+            <div class="level-content">Issue Review Meeting, kế hoạch tháng, release đã deliver</div>
+          </div>
+        </div>
+        <div class="level-item" style="background:#1E3A5F0A;border-color:#1E3A5F30;">
+          <div class="level-bar" style="background:#1E3A5F;"></div>
+          <div class="level-body">
+            <div class="level-who"><span class="level-from" style="color:#1E3A5F;">BoltX</span><span class="level-arr">→</span><span class="level-to">Ban KH-CL / Chủ tịch TĐ</span></div>
+            <div class="level-meta"><span class="level-freq" style="background:#1E3A5F22;color:#1E3A5F;">⏱ 1 tháng/lần</span><span class="level-chan">📤 Báo cáo chính thức</span></div>
+            <div class="level-content">KPI, business outcome, rủi ro, đề xuất</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly report template -->
+      <div class="tmpl-title">📄 Template Báo cáo Sprint (PM → BLĐ · 2 tuần/lần)</div>
+      <div class="tmpl-list">
+        <div class="tmpl-item" style="background:#1F7A4D0D;border-color:#1F7A4D33;">
+          <div class="tmpl-header">
+            <span class="tmpl-num" style="background:#1F7A4D;">1</span>
+            <span class="tmpl-name" style="color:#1F7A4D;">Kết quả tuần này</span>
+          </div>
+          <div class="tmpl-body">
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1F7A4D;">•</span> Số issue completed: X / Y đã lên kế hoạch</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1F7A4D;">•</span> Danh sách release đã deploy</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1F7A4D;">•</span> Số bug phát sinh sau release</div>
+          </div>
+        </div>
+        <div class="tmpl-item" style="background:#2E75B60D;border-color:#2E75B633;">
+          <div class="tmpl-header">
+            <span class="tmpl-num" style="background:#2E75B6;">2</span>
+            <span class="tmpl-name" style="color:#2E75B6;">Tình trạng Sprint hiện tại</span>
+          </div>
+          <div class="tmpl-body">
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#2E75B6;">•</span> Sprint X/Y ngày đã qua: tiến độ (%)</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#2E75B6;">•</span> Issue đang bị block + lý do</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#2E75B6;">•</span> Issue có nguy cơ trễ</div>
+          </div>
+        </div>
+        <div class="tmpl-item" style="background:#C55A110D;border-color:#C55A1133;">
+          <div class="tmpl-header">
+            <span class="tmpl-num" style="background:#C55A11;">3</span>
+            <span class="tmpl-name" style="color:#C55A11;">Rủi ro &amp; Quyết định cần BLĐ</span>
+          </div>
+          <div class="tmpl-body">
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#C55A11;">•</span> Vấn đề nổi bật tuần này</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#C55A11;">•</span> Đề xuất cần phê duyệt</div>
+          </div>
+        </div>
+        <div class="tmpl-item" style="background:#1E3A5F0D;border-color:#1E3A5F33;">
+          <div class="tmpl-header">
+            <span class="tmpl-num" style="background:#1E3A5F;">4</span>
+            <span class="tmpl-name" style="color:#1E3A5F;">Kế hoạch tuần sau</span>
+          </div>
+          <div class="tmpl-body">
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1E3A5F;">•</span> Issue dự kiến complete</div>
+            <div class="tmpl-row"><span class="tmpl-dot" style="color:#1E3A5F;">•</span> Release dự kiến deploy (ngày + nội dung)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- end panel-report -->
+
+</div><!-- end body-wrap -->
+
+<!-- LEGEND -->
+<div class="legend" id="legend">
+  <div class="legend-item"><div class="leg-solid" style="background:#1F7A4D;"></div> Luồng đi tiếp (PASS)</div>
+  <div class="legend-item"><div class="leg-dashed" style="border-color:#B22222;"></div> Luồng trả lại (FAIL)</div>
+  <div class="legend-item"><div class="leg-dot" style="background:#C55A11;"></div> Quality Gate</div>
+  <div class="legend-item"><span>👆</span> Nhấn vào node để xem chi tiết</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════ -->
+<script>
+// ── TAB SWITCHING ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    document.getElementById('legend').style.display = btn.dataset.tab === 'flow' ? '' : 'none';
+  });
+});
+
+// ── STEP DATA ──
+const STEPS = {
+  receive: {
+    title: 'Tiếp nhận & Tạo Ticket',
+    role: 'CX / PTSP',
+    color: '#1A7B8A',
+    items: [
+      'Bắt buộc tạo ticket Jira trước khi xử lý',
+      'Điền đủ: Summary, Description, Issue Type, Priority, Product Line',
+      'Đính kèm ảnh/video minh chứng nếu có',
+      'Nguồn tiếp nhận: Chat / Zalo / Email / Meeting',
+    ],
+    docs: ['Jira Ticket (New)', 'Screenshot / Video'],
+  },
+  triage: {
+    title: 'Triage — Đánh giá sơ bộ',
+    role: 'BA / PO',
+    color: '#2E75B6',
+    gate: { num: 1, label: 'Triage' },
+    items: [
+      'Xác nhận issue hợp lệ, không trùng lặp',
+      'Đánh giá Business Impact: High / Medium / Low',
+      'Xác định Complexity sơ bộ: S / M (L → Luồng 3)',
+      'Xác định System Impact: FE / BE / DB / ...',
+      'Quyết định: Approve → Planned | Reject | Escalate',
+    ],
+    docs: ['Business Impact', 'Complexity', 'System Impact'],
+  },
+  planned: {
+    title: 'Planned — Lên kế hoạch',
+    role: 'PM / PO',
+    color: '#1E3A5F',
+    items: [
+      'Gán Fix Version (Release) và Sprint',
+      'Xác nhận Priority chính thức',
+      'Gán Product Owner & BA Owner',
+      'Cân đối resource và business impact',
+    ],
+    docs: ['Fix Version', 'Sprint', 'Priority'],
+  },
+  refining: {
+    title: 'Refining — Làm rõ yêu cầu',
+    role: 'BA + Dev',
+    color: '#2E75B6',
+    gate: { num: 2, label: 'Ready for Dev' },
+    items: [
+      'BA + Dev họp làm rõ requirement (30–60 phút)',
+      'Viết Acceptance Criteria rõ ràng, có thể test được',
+      'Xác định Scope: IN / OUT of scope',
+      'Vẽ flow nghiệp vụ nếu cần',
+      'Re-estimate Complexity nếu phức tạp hơn dự kiến',
+    ],
+    docs: ['Acceptance Criteria', 'Scope', 'Flow nghiệp vụ'],
+  },
+  inprogress: {
+    title: 'In Progress — Phát triển',
+    role: 'Dev',
+    color: '#1E3A5F',
+    items: [
+      'Code theo Acceptance Criteria và tài liệu BA',
+      'Log thời gian làm việc trên Jira',
+      'Unit Test: API response, DB integrity, performance cơ bản',
+      'Code Review: PR được Dev Lead approve trước khi chuyển Testing',
+    ],
+    docs: ['Code source / Branch', 'Kết quả Unit Test', 'PR / Merge info'],
+  },
+  testing: {
+    title: 'Testing + UAT — Nghiệm thu',
+    role: 'QA / BA / User',
+    color: '#1A7B8A',
+    gate: { num: 3, label: 'Testing + UAT' },
+    items: [
+      'QA/BA test: Happy case → Edge case → Negative case theo test case đã viết',
+      'UAT với đại diện User / Business / CX/PTSP trên môi trường UAT',
+      'PASS: Không lỗi Critical/Blocker, luồng chính hoạt động 100%',
+      'FAIL: Trả Dev, ghi rõ bug list → Dev fix → Test lại từ đầu',
+    ],
+    docs: ['Test case & data', 'Kết quả test (PASS/FAIL)', 'Biên bản nghiệm thu UAT'],
+  },
+  release: {
+    title: 'Ready Release & Go-live',
+    role: 'PM / DevOps',
+    color: '#1F7A4D',
+    gate: { num: 4, label: 'Ready Release' },
+    items: [
+      'Họp Golive Approval (Thứ 5 hàng tuần)',
+      'PM kiểm tra checklist 10 hạng mục, xác nhận không còn Blocker',
+      'CEO phê duyệt nếu release ảnh hưởng nghiệp vụ quan trọng',
+      'DevOps deploy Production theo Deployment Plan',
+      'Smoke Test trên PROD ngay sau deploy',
+      'Monitor 24h: Log, performance, error rate',
+    ],
+    docs: ['Release Note', 'Deployment Plan', 'Rollback Plan', 'Smoke Test result'],
+  },
+  done: {
+    title: 'Done — Hoàn tất',
+    role: 'PM',
+    color: '#1F7A4D',
+    items: [
+      'PM cập nhật trạng thái Done trên Jira',
+      'Lưu Release Note lên Wiki',
+      'CX/PTSP xác nhận với user cuối',
+      'Monitor tiếp 24h sau golive',
+    ],
+    docs: ['Release Note trên Wiki', 'Xác nhận user'],
+  },
+};
+
+// ── Build step list in empty state ──
+const stepListEl = document.getElementById('stepList');
+Object.entries(STEPS).forEach(([key, s]) => {
+  const el = document.createElement('div');
+  el.className = 'step-list-item';
+  el.style.borderLeftColor = s.color;
+  el.innerHTML = `<div><div class="sli-title">${s.title}</div><div class="sli-role">${s.role}</div></div><span class="sli-arrow">›</span>`;
+  el.addEventListener('click', () => toggleStep(key));
+  stepListEl.appendChild(el);
+});
+
+// ── Toggle step detail ──
+let activeStep = null;
+
+function toggleStep(key) {
+  if (activeStep === key) {
+    activeStep = null;
+    showEmpty();
+    unhighlightAll();
+  } else {
+    activeStep = key;
+    showDetail(key);
+    highlightNode(key);
+  }
+}
+
+function unhighlightAll() {
+  document.querySelectorAll('.node[data-step]').forEach(n => n.classList.remove('active'));
+}
+
+function highlightNode(key) {
+  unhighlightAll();
+  const el = document.querySelector(`.node[data-step="${key}"]`);
+  if (el) {
+    el.classList.add('active');
+    el.style.boxShadow = `0 0 0 3px ${STEPS[key].color}, 0 4px 16px rgba(0,0,0,0.2)`;
+  }
+}
+
+function showEmpty() {
+  document.getElementById('detailEmpty').style.display = '';
+  document.getElementById('detailContent').style.display = 'none';
+  document.getElementById('detailContent').classList.remove('active');
+}
+
+function showDetail(key) {
+  const s = STEPS[key];
+  const dc = document.getElementById('detailContent');
+  const de = document.getElementById('detailEmpty');
+
+  let gateHTML = '';
+  if (s.gate) {
+    gateHTML = `
+      <div style="margin-bottom:16px;">
+        <div class="gate-badge" style="background:${s.color};">
+          <span class="gate-num">${s.gate.num}</span>
+          <span class="gate-label">Gate ${s.gate.num}: ${s.gate.label}</span>
+        </div>
+        <div class="gate-note">Điểm kiểm soát chất lượng — phải đạt trước khi chuyển bước tiếp theo</div>
+      </div>`;
+  }
+
+  const activitiesHTML = s.items.map((item, i) => `
+    <div class="activity-item">
+      <span class="act-num" style="background:${s.color};">${i+1}</span>
+      <span class="act-text">${item}</span>
+    </div>`).join('');
+
+  const docsHTML = s.docs.map(d => `
+    <span class="doc-tag" style="background:${s.color}18;border:1px solid ${s.color}44;color:${s.color};">
+      📋 ${d}
+    </span>`).join('');
+
+  dc.innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="detail-title" style="color:${s.color};">${s.title}</div>
+        <span class="role-tag" style="background:${s.color}22;border:1px solid ${s.color}55;color:${s.color};">${s.role}</span>
+      </div>
+      <button class="close-btn" onclick="toggleStep('${key}')">×</button>
+    </div>
+    ${gateHTML}
+    <div class="section-label">Hoạt động chính</div>
+    <div class="activity-list">${activitiesHTML}</div>
+    <div class="section-label">Dữ liệu / Tài liệu bắt buộc</div>
+    <div class="doc-list">${docsHTML}</div>
+  `;
+
+  de.style.display = 'none';
+  dc.style.display = 'block';
+  dc.classList.add('active');
+}
+
+// Init empty state
+showEmpty();
+
+// ── SYNC SWIMLANE HEIGHTS to actual flow layout ──
+function syncSwimLanes() {
+  const fc = document.querySelector('.flow-col');
+  if (!fc) return;
+
+  // Landmarks mark the TOP of each swimlane zone in the flow-col
+  const ids = ['lm0','lm1','lm2','lm3','lm4','lm5'];
+  const roles = ['role0','role1','role2','role3','role4','role5'];
+
+  const fcTop = fc.getBoundingClientRect().top;
+
+  // Get top positions of each landmark relative to flow-col top
+  const tops = ids.map(id => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    return el.getBoundingClientRect().top - fcTop;
+  });
+
+  // Get total flow-col height
+  const totalH = fc.getBoundingClientRect().height;
+
+  // Compute height of each zone
+  for (let i = 0; i < roles.length; i++) {
+    const top = tops[i];
+    const nextTop = (i + 1 < tops.length && tops[i+1] !== null) ? tops[i+1] : totalH;
+    if (top === null) continue;
+    const h = Math.max(nextTop - top, 32);
+    const el = document.getElementById(roles[i]);
+    if (el) el.style.height = h + 'px';
+  }
+}
+
+// Run after layout
+requestAnimationFrame(() => requestAnimationFrame(syncSwimLanes));
+window.addEventListener('resize', syncSwimLanes);
+</script>
+
+<!-- Sprint Calendar Modal -->
+<div class="sc-overlay" id="scOverlay" onclick="scCloseMIfBg(event)">
+  <div class="sc-modal" id="scModal">
+    <div class="sc-modal-header">
+      <button class="sc-modal-close" onclick="scCloseModal()">×</button>
+      <div class="sc-modal-when" id="scMWhen"></div>
+      <div class="sc-modal-title" id="scMTitle"></div>
+    </div>
+    <div class="sc-modal-body" id="scMBody"></div>
+  </div>
+</div>
+
+<script>
+// ── Sprint Calendar JS ──
+const SC_DATA = {
+  irm: {
+    when: '👥 Issue Review Meeting · Thứ 2 cuối tháng · 1 lần/tháng',
+    title: 'Issue Review Meeting (IRM)',
+    color: '#5B2D8E',
+    who: ['PM/PO', 'BA', 'Lead Dev (nếu cần kỹ thuật)', 'CX Lead', 'Đại diện cty thành viên'],
+    purpose: 'Chốt danh sách và thứ tự ưu tiên issue cho tháng tới. Output trực tiếp là queue cho Refining Sprint 1. Không có IRM = Refining không có input = Planning bị block.',
+    items: [
+      'Review kết quả tháng vừa qua: Completed, delayed, quality metrics',
+      'Cty thành viên trình bày nhu cầu và issue mới cho tháng tới',
+      'BA/PM triage nhanh: Business Impact, Complexity sơ bộ, System Impact',
+      'Thống nhất ưu tiên theo ma trận điểm (Business Impact + Urgency + Effort)',
+      'Chốt: Issue nào vào Sprint 1, issue nào vào Sprint 2',
+      'PM cập nhật Jira ngay sau meeting: gán Fix Version, Sprint dự kiến',
+    ],
+    output: ['Queue issue Sprint 1 và Sprint 2 đã ưu tiên', 'Jira updated: Fix Version + Sprint assigned', 'Meeting note gửi tất cả thành phần'],
+    note: 'Cty thành viên cần chuẩn bị trước: danh sách issue mới theo template chuẩn, feedback về issues đã deliver tháng qua.',
+  },
+  refining_s1_a: {
+    when: '🔍 Refining Sprint 1 · Thứ 3–4 cuối tháng · Sau IRM',
+    title: 'Refining — Chuẩn bị Sprint 1',
+    color: '#2E75B6',
+    who: ['BA (chủ trì)', 'Dev liên quan (từng issue)', 'PM (nếu cần quyết định scope)'],
+    purpose: 'Làm rõ toàn bộ issues Sprint 1 để sẵn sàng cho Planning. Issues phải "Ready for Dev" TRƯỚC Planning — không refine trong Planning.',
+    items: [
+      'BA làm việc từng issue với Dev liên quan (30–60 phút/issue)',
+      'Xác nhận Acceptance Criteria rõ ràng, đủ để viết test case',
+      'Xác định Scope rõ ràng: IN / OUT of scope',
+      'Dev estimate effort: S (≤2 ngày) / M (≤5 ngày)',
+      'Xác định System Impact: FE / BE / DB / External System',
+      'Flag ngay nếu issue phức tạp hơn dự kiến → PM điều chỉnh sprint backlog',
+    ],
+    output: ['Tất cả issues Sprint 1: Status = "Ready for Dev"', 'AC confirmed, Scope defined, Estimate done', 'Jira updated đầy đủ trước Planning'],
+    note: '⚡ Quy tắc vàng: Nếu issue chưa "Ready for Dev" thì KHÔNG được đưa vào Sprint Planning. BA chịu trách nhiệm đảm bảo điều này.',
+  },
+  refining_s1_b: {
+    when: '🔍 Refining Sprint 1 · Hoàn tất trước cuối tuần',
+    title: 'Refining Sprint 1 — Hoàn tất',
+    color: '#2E75B6',
+    who: ['BA', 'Dev'],
+    purpose: 'Hoàn tất toàn bộ issues Sprint 1. Deadline cứng: xong trước Thứ 6 để Planning Thứ 2 tuần sau không bị block.',
+    items: [
+      'Hoàn tất các issues còn lại từ ngày T3',
+      'BA review lại toàn bộ: AC đủ chưa? Scope rõ chưa? Estimate done chưa?',
+      'Update Jira: Chuyển status sang "Ready for Dev"',
+      'PM confirm danh sách cuối cùng cho Sprint 1',
+    ],
+    output: ['100% issues Sprint 1: "Ready for Dev"', 'Sprint 1 Backlog confirmed trên Jira'],
+    note: 'Nếu có issue không thể refine đủ trong thời gian này → Loại khỏi Sprint 1, đưa vào Sprint 2 hoặc backlog.',
+  },
+  refining_s2: {
+    when: '🔍 Refining Sprint 2 · Thứ 2–3 Tuần 2 Sprint 1 · Song song với Testing',
+    title: 'Refining — Chuẩn bị Sprint 2',
+    color: '#2E75B6',
+    who: ['BA (chủ trì)', 'Dev (30 phút/issue — không blocking coding)'],
+    purpose: 'Refine issues Sprint 2 trong khi Sprint 1 đang chạy. BA không blocking Dev — chỉ cần Dev tham gia session ngắn để estimate và làm rõ kỹ thuật.',
+    items: [
+      'BA chủ động schedule session ngắn (30 phút) với Dev từng issue',
+      'Dev tham gia vào buổi sáng hoặc sau standup — không interrupt coding session',
+      'Mục tiêu: Xong toàn bộ Refining Sprint 2 trước cuối Tuần 1',
+      'Issues Sprint 2 sẵn sàng cho Planning khi Sprint 1 kết thúc',
+    ],
+    output: ['Issues Sprint 2: "Ready for Dev" trước cuối Tuần 1', 'Planning Sprint 2 có đủ input ngay đầu Tuần 3'],
+    note: 'Thời điểm lý tưởng: Dev Done cuối tuần 1, QA bắt đầu test đầu tuần 2 → BA + Dev refine S2 song song. Phải xong trước cuối T3 tuần 2 để Planning S2 không bị block.',
+  },
+  planning: {
+    when: '📋 Sprint Planning · Thứ 2 đầu sprint · Buổi chiều',
+    title: 'Sprint Planning',
+    color: '#1E3A5F',
+    who: ['PM/PO', 'BA', 'Dev (toàn team)', 'QA'],
+    purpose: 'Chọn issues vào sprint và cam kết Sprint Goal. Không refine trong buổi này — tất cả issues phải đã "Ready for Dev". Dev bắt đầu code ngay chiều cùng ngày.',
+    items: [
+      'PO trình bày Sprint Goal và context business',
+      'Team review danh sách "Ready for Dev" issues — không thảo luận AC',
+      'Dev confirm capacity và estimate tổng thể',
+      'Chọn issues dựa trên capacity (không nhồi quá 80% capacity)',
+      'Thống nhất Sprint Backlog chính thức trên Jira',
+      'Dev nhận issue và bắt đầu ngay chiều cùng ngày',
+    ],
+    output: ['Sprint Backlog confirmed trên Jira', 'Sprint Goal rõ ràng, cả team đồng thuận', 'Dev bắt đầu coding trong ngày'],
+    note: '🚫 Tuyệt đối không đưa issue chưa "Ready for Dev" vào Sprint — dù có áp lực từ stakeholder. Nếu thiếu issue đã refined → sprint capacity nhỏ hơn, không nhồi issue chưa sẵn sàng.',
+  },
+  inprogress: {
+    when: '⚙️ In Progress · Tuần 1 Sprint · T2 chiều → T6',
+    title: 'In Progress — Phát triển',
+    color: '#1E3A5F',
+    who: ['Dev (chủ đạo)', 'BA (hỗ trợ giải đáp)', 'Dev Lead (code review)'],
+    purpose: 'Thực hiện phát triển theo đúng AC đã confirmed trong Refining. Không thay đổi scope trong sprint.',
+    items: [
+      'Code theo Acceptance Criteria — không tự ý thêm/bớt scope',
+      'Daily standup 15 phút mỗi sáng: Hôm qua làm gì? Hôm nay làm gì? Blocker?',
+      'Log thời gian làm việc trên Jira ticket',
+      'Unit Test: API response, DB integrity, logic chính',
+      'Code Review: Dev Lead review trước khi chuyển "Dev Done"',
+      'Blocker phát sinh → báo ngay PM/BA, không tự xử lý âm thầm',
+    ],
+    output: ['Issues chuyển sang "Dev Done"', 'Unit Test passed', 'PR được Dev Lead approve'],
+    note: 'Mục tiêu: Toàn bộ issues "Dev Done" trước cuối Tuần 1 để Tuần 2 tập trung Testing.',
+  },
+  testing: {
+    when: '🧪 Testing + UAT · Thứ 2–3 Tuần 2',
+    title: 'Testing + UAT',
+    color: '#1A7B8A',
+    who: ['QA/BA (testing nội bộ)', 'CX/PTSP (hỗ trợ UAT)', 'Đại diện cty thành viên (UAT)'],
+    purpose: 'QA/BA test nội bộ đầy đủ trước, sau đó bàn giao UAT cho cty thành viên. Chỉ release khi không còn lỗi Critical/Blocker.',
+    items: [
+      'QA/BA: Test Happy Case trước → Edge Case → Negative Case',
+      'Viết test case dựa trên AC đã confirmed trong Refining',
+      'FAIL: Tạo bug ticket, gán Dev fix ngay trong sprint',
+      'Bàn giao UAT cho cty thành viên sau khi QA/BA pass nội bộ',
+      'CX/PTSP hỗ trợ cty thành viên trong quá trình UAT',
+      'Cty thành viên xác nhận PASS bằng email/comment Jira',
+    ],
+    output: ['Test results (PASS/FAIL) cho từng issue', 'UAT confirmation từ cty thành viên', 'Biên bản nghiệm thu (nếu cần)'],
+    note: 'UAT phải hoàn thành trước Thứ 4 để kịp Bug Fix và Golive Meeting Thứ 5.',
+  },
+  bugfix: {
+    when: '🐛 Bug Fix · Thứ 4 Tuần 2 · Nếu Testing FAIL',
+    title: 'Bug Fix + Re-test',
+    color: '#C55A11',
+    who: ['Dev (fix)', 'QA/BA (re-test)'],
+    purpose: 'Xử lý bug phát hiện trong Testing/UAT. Phân loại rõ ràng để không kéo dài sprint.',
+    items: [
+      'Critical/Blocker: Fix trong ngày, QA re-test ngay',
+      'Major: Cố gắng fix trong T4, nếu không kịp → PM quyết định defer',
+      'Minor: Tạo ticket mới, đưa vào sprint sau — không delay release vì minor bug',
+      'QA confirm re-test PASS trước Golive Meeting T5',
+    ],
+    output: ['Critical bugs: Fixed và re-tested', 'Minor bugs: Logged trong Jira để sprint sau'],
+    note: 'Không delay release vì Minor bug. Chỉ delay nếu còn Critical/Blocker chưa fix.',
+  },
+  retest: {
+    when: '🔁 Re-test · Thứ 4 chiều Tuần 2',
+    title: 'Re-test sau Bug Fix',
+    color: '#1A7B8A',
+    who: ['QA/BA'],
+    purpose: 'Xác nhận các bug đã fix chạy đúng. Không cần test lại toàn bộ — chỉ test issue liên quan.',
+    items: [
+      'Test lại các issue bị bug trong lần test đầu',
+      'Regression test nhanh các module liên quan',
+      'Confirm PASS → chuyển trạng thái "Ready for Release"',
+    ],
+    output: ['Toàn bộ issues: "Ready for Release"', 'Không còn Critical/Blocker'],
+    note: 'Nếu re-test vẫn FAIL → PM quyết định: Defer issue đó sang sprint sau hay delay toàn bộ release.',
+  },
+  golive_mtg: {
+    when: '🏁 Golive Meeting · Thứ 5 cuối sprint · 30 phút',
+    title: 'Golive Approval Meeting',
+    color: '#1F7A4D',
+    who: ['PM (chủ trì + phê duyệt)', 'Dev Lead', 'QA', 'DevOps'],
+    purpose: 'PM review checklist và phê duyệt release chính thức. Không deploy nếu chưa qua Golive Meeting.',
+    items: [
+      'Kiểm tra: Toàn bộ issues pass Testing + UAT chưa?',
+      'Kiểm tra: Không còn Blocker hoặc Critical issue?',
+      'Review Release Note và Deployment Plan',
+      'Rollback Plan đã sẵn sàng chưa?',
+      'PM ký phê duyệt trên Jira hoặc email',
+      'CEO confirm nếu release ảnh hưởng nghiệp vụ quan trọng',
+    ],
+    output: ['PM approval confirmed', 'Checklist hoàn tất', 'Deployment Plan ready', 'DevOps sẵn sàng deploy T6'],
+    note: 'Nếu checklist chưa đủ → Dời release đến T6 tuần sau. Không deploy khi còn item chưa tick.',
+  },
+  release: {
+    when: '🚀 Release Production · Thứ 6 cuối sprint',
+    title: 'Release Production',
+    color: '#1F7A4D',
+    who: ['DevOps (deploy)', 'Dev (hỗ trợ kỹ thuật)', 'PM (giám sát)', 'CX (thông báo user)'],
+    purpose: 'Deploy lên Production, verify ngay sau deploy, monitor 24h đầu. Thông báo cty thành viên về release.',
+    items: [
+      'DevOps deploy theo Deployment Plan đã chuẩn bị',
+      'Smoke Test ngay sau deploy: Các luồng chính hoạt động không?',
+      'Rollback ngay nếu phát sinh vấn đề nghiêm trọng',
+      'Monitor 1h đầu: Error rate, response time, log hệ thống',
+      'PM thông báo cty thành viên: Release Note kèm theo',
+      'Monitor tiếp 24h: Daily check log và performance',
+    ],
+    output: ['Release lên Production thành công', 'Smoke Test passed', 'Release Note gửi cty thành viên', 'Jira tickets: Status = Done'],
+    note: 'Nếu phát sinh Critical bug sau deploy → Kích hoạt Luồng 1 (Hotfix) ngay lập tức.',
+  },
+  report: {
+    when: '📊 Báo cáo tiến độ Sprint · Thứ 2 tuần sau sprint · 2 tuần/lần',
+    title: 'Báo cáo Tiến độ Tuần',
+    color: '#6B7280',
+    who: ['PM (soạn)', 'Ban lãnh đạo BoltX (nhận)'],
+    purpose: 'Tổng hợp kết quả sprint sau mỗi 2 tuần: Issues completed, release đã golive, metrics chất lượng. Cơ sở để BLĐ nắm tình hình mà không cần họp thêm.',
+    items: [
+      '1. Kết quả tuần này: Issues completed / Release đã deploy / Bug rate',
+      '2. Tình trạng sprint: Tiến độ %, issues bị block, nguy cơ trễ',
+      '3. Rủi ro & Quyết định cần BLĐ (nếu có)',
+      '4. Kế hoạch tuần sau: Issues dự kiến done, release dự kiến',
+    ],
+    output: ['Báo cáo tuần lên Wiki', 'Email gửi Ban lãnh đạo', 'CC các đơn vị liên quan'],
+    note: 'Báo cáo ngắn gọn — tối đa 1 trang. BLĐ không cần đọc chi tiết, chỉ cần thấy: On track hay không, rủi ro gì, cần quyết định gì.',
+  },
+  monitor_am: {
+    when: '📡 Monitor sau Golive · Thứ 2 sáng đầu sprint',
+    title: 'Monitor sau Golive — Buổi sáng',
+    color: '#1F7A4D',
+    who: ['DevOps (log + metric)', 'Dev (hỗ trợ kỹ thuật)', 'PM (xác nhận)', 'CX (phản hồi user)'],
+    purpose: 'Kiểm tra Production sau khi release sprint trước. Xác nhận hệ thống ổn định trước khi bắt đầu sprint mới. Phát hiện sớm vấn đề để kích hoạt Hotfix kịp thời nếu cần.',
+    items: [
+      'DevOps check: Error rate, response time, server load so với baseline',
+      'Dev review: Application log có ERROR/WARNING bất thường không?',
+      'DB check: Data integrity sau migration script (nếu có)',
+      'CX tổng hợp: User có báo cáo lỗi qua Zalo/email không?',
+      'PM kết luận: Production ổn định → Tiến hành Planning chiều · Có vấn đề → Kích hoạt Luồng 1',
+    ],
+    output: ['Production stability confirmed', 'Không có Critical issue → Planning tiến hành bình thường', 'Có Critical issue → Luồng 1 Hotfix, Planning lùi lại'],
+    note: 'Nếu phát hiện Critical bug sáng T2 → PM quyết định: Fix trước (Luồng 1, vài giờ) rồi Planning chiều, hoặc Planning trước rồi assign Hotfix song song.',
+  },
+  release_package: {
+    when: '📦 Chuẩn bị gói nâng cấp · Thứ 5 Tuần 2',
+    title: 'Chuẩn bị Gói Nâng cấp',
+    color: '#1E3A5F',
+    who: ['Dev (build + script)', 'DevOps (deployment plan)', 'BA (Release Note + hướng dẫn)'],
+    purpose: 'Đóng gói đầy đủ mọi thứ cần thiết cho việc deploy ngày T6. Không được thiếu bất kỳ thành phần nào — deploy mà thiếu chuẩn bị sẽ gây rủi ro cao.',
+    items: [
+      'Dev: Build artifact, tag version trên Git (vX.Y.Z)',
+      'Dev: Kiểm tra và test DB migration script trên môi trường staging',
+      'DevOps: Viết Deployment Plan chi tiết từng bước',
+      'DevOps: Chuẩn bị và verify Rollback Plan — test thử rollback nếu cần',
+      'BA: Viết Release Note: Danh sách tính năng, fix, thay đổi',
+      'BA: Chuẩn bị hướng dẫn sử dụng (nếu có tính năng mới)',
+      'PM: Review toàn bộ gói, confirm checklist deploy đủ 10 hạng mục',
+    ],
+    output: ['Build artifact đã tag version', 'Deployment Plan + Rollback Plan hoàn chỉnh', 'DB migration script đã test trên staging', 'Release Note + Hướng dẫn SX', 'Checklist deploy: 100% ready'],
+    note: 'Toàn bộ gói nâng cấp phải hoàn tất trước EOD Thứ 5 để DevOps deploy sáng Thứ 6 không bị block.',
+  },
+  buffer: {
+    when: '🛡 Buffer · Thứ 5–6 tuần trước sprint',
+    title: 'Buffer & Triage khẩn',
+    color: '#6B7280',
+    who: ['BA', 'PM'],
+    purpose: 'Thời gian linh hoạt để xử lý phát sinh, hoàn thiện Refining còn lại, và chuẩn bị tài liệu cho Planning.',
+    items: [
+      'Hoàn thiện Refining issues còn lại nếu T3–T4 chưa xong',
+      'Xử lý Hotfix khẩn nếu phát sinh (Luồng 1)',
+      'Chuẩn bị tài liệu Sprint Planning: Sprint Goal draft, capacity check',
+      'PM review và confirm Sprint Backlog lần cuối',
+    ],
+    output: ['Sprint 1 Backlog: 100% Ready for Dev', 'Planning T2 không bị block'],
+    note: 'Nếu buffer bị chiếm hoàn toàn bởi Hotfix → PM phải điều chỉnh scope Sprint 1.',
+  },
+};
+
+function scOpenModal(key) {
+  const d = SC_DATA[key]; if (!d) return;
+  document.getElementById('scMWhen').textContent = d.when;
+  document.getElementById('scMWhen').style.color = d.color;
+  document.getElementById('scMTitle').textContent = d.title;
+  document.getElementById('scMTitle').style.color = d.color;
+
+  let h = '';
+  // Purpose
+  h += `<div class="ms"><div style="background:${d.color}0D;border-left:3px solid ${d.color};border-radius:0 8px 8px 0;padding:10px 14px;font-size:12.5px;line-height:1.6;">${d.purpose}</div></div>`;
+  // Who
+  h += `<div class="ms"><div class="ms-title">Thành phần</div><div style="display:flex;flex-wrap:wrap;gap:5px;">` +
+    d.who.map(w => `<span style="background:${d.color}18;border:1px solid ${d.color}44;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:700;color:${d.color};">${w}</span>`).join('') +
+    `</div></div>`;
+  // Items
+  h += `<div class="ms"><div class="ms-title">Nội dung thực hiện</div><div class="ms-items">` +
+    d.items.map((it, i) => `<div class="ms-item"><span class="ms-num" style="background:${d.color};">${i+1}</span><span class="ms-text">${it}</span></div>`).join('') +
+    `</div></div>`;
+  // Output
+  h += `<div class="ms"><div class="ms-title">Output</div><div style="background:${d.color}08;border:1px solid ${d.color}33;border-radius:8px;padding:10px 14px;">` +
+    d.output.map(o => `<div style="font-size:12px;color:var(--text);padding:2px 0;display:flex;gap:6px;"><span style="color:${d.color};font-weight:900;">✓</span>${o}</div>`).join('') +
+    `</div></div>`;
+  // Note
+  if (d.note) h += `<div class="ms-note" style="background:#FFF7ED;border:1.5px solid #FED7AA;color:#92400E;">💡 ${d.note}</div>`;
+
+  document.getElementById('scMBody').innerHTML = h;
+  document.getElementById('scOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function scCloseModal() { document.getElementById('scOverlay').classList.remove('active'); document.body.style.overflow = ''; }
+function scCloseMIfBg(e) { if (e.target === document.getElementById('scOverlay')) scCloseModal(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') scCloseModal(); });
+</script>
+</body>
+</html>
