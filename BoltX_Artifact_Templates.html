@@ -129,6 +129,7 @@ body { font-family:'Be Vietnam Pro',sans-serif; background:var(--bg); color:var(
     <button class="tab-btn" data-tab="report">📊 Báo cáo</button>
     <button class="tab-btn" data-tab="meeting">👥 Họp</button>
     <button class="tab-btn" data-tab="product">📐 Tài liệu SP / BA</button>
+    <button class="tab-btn" data-tab="discovery">🔍 Discovery</button>
   </div>
 </div>
 
@@ -1013,6 +1014,468 @@ Decision 2: ...` },
     note:{ color:'#C55A11', bg:'#FCE4D6', text:'Mọi thay đổi yêu cầu sau khi Refining done phải có CR. Không tự ý thay đổi scope dù nhỏ. CR phải được PM phê duyệt trước khi Dev thực hiện.' }
   },
 
+  // ─── DISCOVERY TRACK ────────────────────────────
+  {
+    id:'discovery-brief',
+    tab:'discovery',
+    badge:'💡 Opportunity Brief',
+    badgeColor:'#0F4C75',
+    title:'Opportunity Brief — Tóm tắt cơ hội sản phẩm',
+    owner:'PM / PO', when:'Đầu Discovery — sau khi phát hiện cơ hội tiềm năng',
+    desc:'Tài liệu ngắn gọn (1 trang) để PM/PO pitch một cơ hội sản phẩm. Là đầu vào cho Go/No-Go gate đầu tiên.',
+    chips:[{l:'Discovery Track',c:'#0F4C75'},{l:'Gate 1',c:'#1B6CA8'}],
+    sections:[
+      { title:'💡 CƠ HỘI', fields:[
+        { label:'Tên cơ hội *', type:'input', req:true, placeholder:`Tên ngắn gọn, dễ nhớ` },
+        { label:'Người đề xuất *', type:'input', req:true, placeholder:`Tên + Vai trò + Ngày` },
+        { label:'Nguồn phát hiện *', type:'options', req:true, opts:[
+          {l:'User feedback',c:'#0F4C75'},{l:'CX/PTSP report',c:'#1B6CA8'},
+          {l:'Internal observation',c:'#5B2D8E'},{l:'Market research',c:'#1A7B8A'},
+          {l:'Competitor analysis',c:'#C55A11'},{l:'Data analysis',c:'#1F7A4D'}
+        ]},
+      ]},
+      { title:'🎯 VẤN ĐỀ & CƠ HỘI', fields:[
+        { label:'Problem *', type:'textarea', req:true,
+          placeholder:`Ai đang gặp vấn đề gì?
+• Người dùng: [Vai trò / nhóm]
+• Vấn đề: [Mô tả cụ thể]
+• Khi nào gặp: [Ngữ cảnh]
+• Hậu quả nếu không giải quyết: [Impact]` },
+        { label:'Opportunity *', type:'textarea', req:true,
+          placeholder:`Cơ hội là gì nếu giải quyết được?
+• Tiết kiệm: [Thời gian / Chi phí]
+• Tăng: [Doanh thu / Satisfaction / Efficiency]
+• Giảm: [Rủi ro / Lỗi / Churn]` },
+        { label:'Evidence *', type:'textarea', req:true,
+          placeholder:`Bằng chứng / dữ liệu hỗ trợ:
+• Số lượng user bị ảnh hưởng: X
+• Tần suất xảy ra: X lần/tháng
+• Feedback quote: "..."
+• Ticket liên quan: [ID]` },
+      ]},
+      { title:'🔭 GIẢI PHÁP SƠ BỘ', fields:[
+        { label:'Hướng giải pháp tiềm năng', type:'textarea',
+          placeholder:`Ý tưởng ban đầu (chưa cần chi tiết):
+• Option A: ...
+• Option B: ...
+
+Không nhất thiết phải chính xác — sẽ validate trong Discovery.` },
+      ]},
+      { title:'📊 ĐÁNH GIÁ SƠ BỘ', fields:[
+        { label:'Business Impact', type:'options', opts:[
+          {l:'High — ảnh hưởng core business',c:'#B22222'},
+          {l:'Medium — ảnh hưởng một phần',c:'#C55A11'},
+          {l:'Low — cải tiến nhỏ',c:'#1F7A4D'}
+        ]},
+        { label:'Effort ước tính', type:'options', opts:[
+          {l:'S — vài ngày',c:'#1F7A4D'},{l:'M — vài tuần',c:'#2E75B6'},
+          {l:'L — 1–2 tháng',c:'#C55A11'},{l:'XL — > 2 tháng',c:'#B22222'}
+        ]},
+        { label:'Urgency', type:'options', opts:[
+          {l:'Ngay bây giờ',c:'#B22222'},{l:'Trong quý này',c:'#C55A11'},{l:'Có thể defer',c:'#1F7A4D'}
+        ]},
+      ]},
+      { title:'✅ ĐỀ NGHỊ', fields:[
+        { label:'Đề nghị tiếp theo *', type:'options', req:true, opts:[
+          {l:'✅ Tiến hành Discovery đầy đủ',c:'#1F7A4D'},
+          {l:'⏳ Đưa vào backlog — review sau',c:'#C55A11'},
+          {l:'❌ Không tiến hành',c:'#B22222'}
+        ]},
+        { label:'Lý do', type:'input', placeholder:`Lý do đề nghị trên` },
+      ]},
+    ],
+    note:{ color:'#0F4C75', bg:'#EBF4FB', text:'Opportunity Brief phải ngắn gọn — tối đa 1 trang. Mục tiêu là thuyết phục PM/PO có đủ lý do để đầu tư thêm thời gian Discovery, không phải trình bày giải pháp chi tiết.' }
+  },
+
+  {
+    id:'user-interview',
+    tab:'discovery',
+    badge:'🎤 User Interview', badgeColor:'#1B6CA8',
+    title:'User Interview — Phỏng vấn người dùng',
+    owner:'PM / BA / PO', when:'Discovery Track — trước khi xác định giải pháp',
+    desc:'Template hướng dẫn và ghi chép phỏng vấn người dùng. Mục tiêu: hiểu pain point thực sự, không validate giải pháp sẵn có.',
+    chips:[{l:'Discovery Track',c:'#1B6CA8'},{l:'3–5 user/vòng',c:'#1A7B8A'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Người phỏng vấn *', type:'input', req:true, placeholder:`Tên + Vai trò` },
+        { label:'Người được phỏng vấn *', type:'input', req:true, placeholder:`Tên — Vai trò — Công ty — [Ẩn danh nếu cần]` },
+        { label:'Ngày / Hình thức', type:'input', placeholder:`DD/MM/YYYY — Online / Face-to-face — 45–60 phút` },
+        { label:'Opportunity Brief liên quan', type:'input', placeholder:`[Tên cơ hội] đang khám phá` },
+      ]},
+      { title:'🎯 MỤC TIÊU PHỎNG VẤN', fields:[
+        { label:'Hypothesis muốn kiểm chứng *', type:'textarea', req:true,
+          placeholder:`Chúng ta tin rằng [người dùng X] gặp vấn đề [Y] khi làm [Z].
+Phỏng vấn này sẽ xác nhận hoặc bác bỏ điều đó.` },
+        { label:'Top 3 câu hỏi cần trả lời', type:'textarea', req:true,
+          placeholder:`1. [Câu hỏi quan trọng nhất cần hiểu]
+2. 
+3. ` },
+      ]},
+      { title:'📝 INTERVIEW GUIDE (Gợi ý câu hỏi)', fields:[
+        { label:'Warm-up (5 phút)', type:'textarea',
+          placeholder:`• Anh/chị có thể giới thiệu về công việc hàng ngày không?
+• Một ngày làm việc điển hình của anh/chị trông như thế nào?
+• Anh/chị dùng hệ thống [X] như thế nào trong công việc?` },
+        { label:'Core questions (30 phút)', type:'textarea',
+          placeholder:`Hỏi về hành vi THỰC TẾ, không hỏi về tương lai hoặc ý kiến:
+• Lần gần nhất anh/chị làm [Task Y] là khi nào? Kể cho tôi nghe?
+• Bước nào khó nhất / mất nhiều thời gian nhất?
+• Anh/chị đã thử cách nào để giải quyết vấn đề đó chưa?
+• Điều gì sẽ xảy ra nếu vấn đề này không được giải quyết?` },
+        { label:'Wrap-up (5 phút)', type:'textarea',
+          placeholder:`• Nếu có thể cải thiện 1 điều trong workflow hiện tại, đó là gì?
+• Có điều gì tôi chưa hỏi mà anh/chị muốn chia sẻ không?` },
+      ]},
+      { title:'📊 GHI CHÉP KẾT QUẢ', fields:[
+        { label:'Key quotes *', type:'textarea', req:true,
+          placeholder:`Ghi lại nguyên văn những câu nói đáng chú ý:
+"[Quote 1]" — [Context]
+"[Quote 2]" — [Context]` },
+        { label:'Pain points phát hiện *', type:'textarea', req:true,
+          placeholder:`• Pain 1: [Mô tả] — Mức độ: H/M/L — Frequency: H/M/L
+• Pain 2: ...
+• Pain 3: ...` },
+        { label:'Hành vi / Workaround hiện tại', type:'textarea',
+          placeholder:`User đang giải quyết vấn đề bằng cách:
+• [Mô tả workaround] — Lý do dùng: [Lý do]
+• ` },
+        { label:'Surprises / Insights', type:'textarea',
+          placeholder:`Điều bất ngờ / khác với assumption ban đầu:
+• [Insight 1]
+• ` },
+      ]},
+      { title:'💡 TỔNG KẾT SAU PHỎNG VẤN', fields:[
+        { label:'Hypothesis: Confirmed / Rejected?', type:'options', opts:[
+          {l:'✅ Confirmed',c:'#1F7A4D'},{l:'❌ Rejected',c:'#B22222'},{l:'⚠️ Partially confirmed',c:'#C55A11'}
+        ]},
+        { label:'Điều chỉnh hypothesis', type:'textarea',
+          placeholder:`Nếu rejected/partially: Hypothesis mới là gì?
+"Chúng ta tin rằng [điều chỉnh]..."` },
+        { label:'Next action', type:'input',
+          placeholder:`Phỏng vấn tiếp? Prototype? Chuyển Define? Dừng Discovery?` },
+      ]},
+    ],
+    note:{ color:'#1B6CA8', bg:'#EBF4FB', text:'KHÔNG pitch giải pháp trong phỏng vấn. Nhiệm vụ là NGHE và HIỂU, không thuyết phục. Cần phỏng vấn tối thiểu 3–5 người trước khi rút ra kết luận.' }
+  },
+
+  {
+    id:'problem-definition',
+    tab:'discovery',
+    badge:'🎯 Problem Definition', badgeColor:'#5B2D8E',
+    title:'Problem Definition — Xác định vấn đề cốt lõi',
+    owner:'PM / BA', when:'Sau khi hoàn thành User Interviews — trước Solution Design',
+    desc:'Tổng hợp kết quả research để xác định Problem Statement rõ ràng. Là nền tảng cho mọi quyết định giải pháp sau này.',
+    chips:[{l:'Discovery Track',c:'#5B2D8E'},{l:'Sau User Research',c:'#1B6CA8'}],
+    sections:[
+      { title:'👥 RESEARCH SUMMARY', fields:[
+        { label:'Số lượng user đã phỏng vấn *', type:'input', req:true, placeholder:`X người — Roles: [Liệt kê]` },
+        { label:'Thời gian research', type:'input', placeholder:`DD/MM → DD/MM/YYYY` },
+        { label:'Link các Interview Notes', type:'input', placeholder:`[Link Wiki / Drive]` },
+      ]},
+      { title:'🗺 USER JOURNEY MAP', fields:[
+        { label:'Current Journey (As-Is) *', type:'textarea', req:true,
+          placeholder:`Bước 1: [Action] → Cảm xúc: 😐/😞 → Pain: [Mô tả]
+Bước 2: [Action] → Cảm xúc: 😞 → Pain: [Lớn nhất]
+Bước 3: ...
+
+(Kèm link diagram nếu có)` },
+        { label:'Điểm đau lớn nhất (Top Pain Points) *', type:'textarea', req:true,
+          placeholder:`Pain 1: [Mô tả] — Gặp bởi X/Y user — Frequency: Hàng ngày/tuần/tháng
+Pain 2: ...
+Pain 3: ...` },
+      ]},
+      { title:'🎯 PROBLEM STATEMENT', fields:[
+        { label:'Problem Statement *', type:'textarea', req:true,
+          placeholder:`[Người dùng X] đang gặp khó khăn khi [thực hiện Y] vì [nguyên nhân Z], dẫn đến [hậu quả W].
+
+Điều này ảnh hưởng đến [số lượng người] và xảy ra [tần suất].` },
+        { label:'Job-to-be-done *', type:'textarea', req:true,
+          placeholder:`Khi [tình huống], người dùng muốn [mục tiêu], để [lý do sâu xa].
+
+Ví dụ: "Khi cần xử lý lệnh khớp, trader muốn xác nhận nhanh trong 30 giây, để không bỏ lỡ cơ hội và giảm rủi ro."` },
+        { label:'How Might We (HMW)', type:'textarea',
+          placeholder:`Câu hỏi mở ra hướng giải pháp:
+• HMW giúp [user] [đạt được Y] mà không cần [khó khăn Z]?
+• HMW làm cho [bước X] nhanh hơn / đơn giản hơn?
+• HMW giúp [user] tránh được [lỗi / rủi ro]?` },
+      ]},
+      { title:'📏 SUCCESS METRICS', fields:[
+        { label:'Primary metric *', type:'input', req:true,
+          placeholder:`Nếu giải quyết được vấn đề này, metric nào sẽ thay đổi?
+Ví dụ: "Thời gian xử lý lệnh giảm từ 5 phút xuống < 1 phút"` },
+        { label:'Secondary metrics', type:'textarea',
+          placeholder:`• User satisfaction (CSAT/NPS): từ X → Y
+• Error rate: từ X% → < Y%
+• Task completion rate: lên ≥ X%` },
+        { label:'Counter metrics (Guardrails)', type:'textarea',
+          placeholder:`Những gì KHÔNG được ảnh hưởng xấu:
+• [Metric A] không được giảm xuống dưới X
+• [Metric B] phải giữ nguyên` },
+      ]},
+      { title:'⛔ OUT OF SCOPE (Discovery)', fields:[
+        { label:'Không giải quyết trong lần này', type:'textarea',
+          placeholder:`• [Vấn đề A] — Lý do defer: ...
+• [Vấn đề B] — Thuộc về team / hệ thống khác
+• [Vấn đề C] — Priority thấp hơn` },
+      ]},
+    ],
+    note:{ color:'#5B2D8E', bg:'#F3E8FF', text:'Problem Statement phải được PM, PO và ít nhất 1 stakeholder xác nhận trước khi chuyển sang Define Solution. Một Problem Statement tốt không đề cập đến bất kỳ giải pháp cụ thể nào.' }
+  },
+
+  {
+    id:'competitor-analysis',
+    tab:'discovery',
+    badge:'🔭 Competitor Analysis', badgeColor:'#1A7B8A',
+    title:'Competitor & Market Analysis',
+    owner:'PM / BA', when:'Discovery Track — song song với User Research',
+    desc:'Phân tích cách các giải pháp hiện có (cả nội bộ và bên ngoài) đang giải quyết vấn đề tương tự. Tìm gap và cơ hội.',
+    chips:[{l:'Discovery Track',c:'#1A7B8A'},{l:'Market research',c:'#0F4C75'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Vấn đề đang nghiên cứu *', type:'input', req:true, placeholder:`Link tới Problem Definition / Opportunity Brief` },
+        { label:'Người thực hiện *', type:'input', req:true, placeholder:`Tên + Ngày` },
+      ]},
+      { title:'🔭 PHÂN TÍCH ĐỐI THỦ / GIẢI PHÁP HIỆN CÓ', type:'table',
+        headers:['Giải pháp','Loại','Điểm mạnh','Điểm yếu','Bài học cho BoltX'],
+        rows:[
+          ['[Tên]','Internal / Competitor / Workaround','','',''],
+          ['[Tên]','','','',''],
+          ['[Tên]','','','',''],
+          ['[Tên]','','','',''],
+        ]
+      },
+      { title:'📊 FEATURE COMPARISON', type:'table',
+        headers:['Tính năng / Capability','BoltX hiện tại','Giải pháp A','Giải pháp B','Giải pháp C'],
+        rows:[
+          ['[Feature 1]','❌ Không có','✅','✅','❌'],
+          ['[Feature 2]','⚠️ Partial','✅','❌','✅'],
+          ['[Feature 3]','✅ Có','✅','✅','✅'],
+          ['[Feature 4]','❌','❌','❌','✅'],
+        ]
+      },
+      { title:'💡 KEY INSIGHTS', fields:[
+        { label:'Gaps / Cơ hội *', type:'textarea', req:true,
+          placeholder:`Những gì CHƯA được giải quyết tốt bởi bất kỳ giải pháp nào:
+• Gap 1: [Mô tả] — Cơ hội cho BoltX: ...
+• Gap 2: ...
+• Gap 3: ...` },
+        { label:'Best practices cần học', type:'textarea',
+          placeholder:`Điều nên áp dụng từ các giải pháp tốt nhất:
+• [Giải pháp X] làm tốt [điều Y] vì [lý do] → BoltX có thể áp dụng bằng cách ...
+• ` },
+        { label:'Điều KHÔNG nên làm', type:'textarea',
+          placeholder:`Anti-patterns từ các giải pháp kém:
+• [Giải pháp X] thất bại vì [lý do] → Tránh bằng cách ...
+• ` },
+      ]},
+    ],
+  },
+
+  {
+    id:'business-case',
+    tab:'discovery',
+    badge:'💰 Business Case', badgeColor:'#1F7A4D',
+    title:'Business Case & ROI Analysis',
+    owner:'PM / PO', when:'Cuối Discovery — trước Go/No-Go decision',
+    desc:'Đánh giá khả năng đầu tư. Cân bằng giữa value mang lại và effort bỏ ra. Là cơ sở để CEO/BLĐ phê duyệt Go.',
+    chips:[{l:'Go/No-Go Gate',c:'#1F7A4D'},{l:'CEO review',c:'#5B2D8E'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Opportunity / Feature *', type:'input', req:true, placeholder:`Tên — Link Opportunity Brief` },
+        { label:'Người soạn *', type:'input', req:true, placeholder:`PM / PO — Ngày DD/MM/YYYY` },
+      ]},
+      { title:'💎 VALUE PROPOSITION', fields:[
+        { label:'Business value *', type:'textarea', req:true,
+          placeholder:`Giá trị mang lại cho BoltX:
+• Tăng doanh thu: [Ước tính nếu có]
+• Giảm chi phí vận hành: [Ước tính]
+• Giảm rủi ro: [Loại rủi ro, mức độ]
+• Cải thiện NPS/satisfaction: [Ước tính]` },
+        { label:'User value *', type:'textarea', req:true,
+          placeholder:`Giá trị trực tiếp cho người dùng:
+• Tiết kiệm thời gian: X phút/lần × Y lần/ngày = Z giờ/tháng
+• Giảm lỗi: từ X% xuống Y%
+• Cải thiện trải nghiệm: [Mô tả cụ thể]` },
+        { label:'Strategic alignment', type:'textarea',
+          placeholder:`Feature này phù hợp với chiến lược nào?
+• [Mục tiêu chiến lược 1]: ...
+• [Mục tiêu chiến lược 2]: ...` },
+      ]},
+      { title:'💸 COST & EFFORT', fields:[
+        { label:'Development effort *', type:'textarea', req:true,
+          placeholder:`Dev: X ngày-người
+BA: Y ngày-người
+QA: Z ngày-người
+DevOps: W ngày-người
+---
+Tổng: ~N ngày-người ≈ M sprint` },
+        { label:'Opportunity cost', type:'textarea',
+          placeholder:`Nếu làm feature này thay vì các việc khác:
+• Trade-off với: [Feature/work khác]
+• Impact của việc delay [Feature X]: ...` },
+        { label:'Maintenance cost (sau khi launch)', type:'input',
+          placeholder:`Ước tính effort maintain hàng tháng: X giờ/tháng` },
+      ]},
+      { title:'📊 RISK ASSESSMENT', fields:[
+        { label:'Technical risks', type:'textarea',
+          placeholder:`• Risk 1: [Mô tả] — Likelihood: H/M/L — Impact: H/M/L — Mitigation: ...
+• Risk 2: ...
+• Risk 3: ...` },
+        { label:'Business risks', type:'textarea',
+          placeholder:`• Risk 1: [Ví dụ: User không adopt] — Likelihood: M — Mitigation: ...
+• Risk 2: ...` },
+      ]},
+      { title:'✅ GO / NO-GO RECOMMENDATION', fields:[
+        { label:'Recommendation *', type:'options', req:true, opts:[
+          {l:'✅ GO — Đầu tư xứng đáng',c:'#1F7A4D'},
+          {l:'⚠️ GO với điều kiện — Scope cần thu nhỏ',c:'#C55A11'},
+          {l:'⏳ DEFER — Timing chưa phù hợp',c:'#6B7280'},
+          {l:'❌ NO-GO — Không đủ ROI',c:'#B22222'}
+        ]},
+        { label:'Lý do *', type:'textarea', req:true,
+          placeholder:`Lý do cho recommendation trên:
+• Value vs Effort: ...
+• Strategic fit: ...
+• Risk level: ...` },
+        { label:'Điều kiện (nếu GO có điều kiện)', type:'textarea',
+          placeholder:`Những điều kiện phải đáp ứng để tiến hành:
+• Điều kiện 1: ...
+• Điều kiện 2: ...` },
+      ]},
+    ],
+    note:{ color:'#1F7A4D', bg:'#DCFCE7', text:'Business Case không cần chính xác tuyệt đối — cần đủ thuyết phục để ra quyết định. Nếu không thể ước tính value, đó là dấu hiệu cần thêm research trước khi Go.' }
+  },
+
+  {
+    id:'prototype-feedback',
+    tab:'discovery',
+    badge:'🖼 Prototype Feedback', badgeColor:'#C55A11',
+    title:'Prototype & User Feedback Session',
+    owner:'BA / PM', when:'Cuối Define stage — validate solution trước khi commit build',
+    desc:'Thu thập feedback từ user về prototype/mockup trước khi commit phát triển. Phát hiện vấn đề sớm khi chi phí sửa còn thấp.',
+    chips:[{l:'Discovery Track',c:'#C55A11'},{l:'Trước Go/No-Go',c:'#1F7A4D'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Feature đang validate *', type:'input', req:true, placeholder:`Tên feature — Link BRD / User Stories` },
+        { label:'Link Prototype/Mockup *', type:'input', req:true, placeholder:`Figma / InVision / Sketch link` },
+        { label:'Người tham gia test', type:'input', placeholder:`X người — Roles: [Liệt kê]` },
+        { label:'Ngày', type:'input', placeholder:`DD/MM/YYYY` },
+      ]},
+      { title:'🎯 MỤC TIÊU VALIDATE', fields:[
+        { label:'Hypothesis cần kiểm chứng *', type:'textarea', req:true,
+          placeholder:`Chúng ta tin rằng [giải pháp X] sẽ giúp user [đạt được Y].
+Thành công khi X% user hoàn thành task trong Y phút mà không cần hướng dẫn.` },
+        { label:'Tasks cần user thực hiện *', type:'textarea', req:true,
+          placeholder:`Task 1: [Mô tả task — không reveal cách làm]
+Task 2: ...
+Task 3: ...` },
+      ]},
+      { title:'📊 KẾT QUẢ TỪNG USER', type:'table',
+        headers:['User','Task 1','Task 2','Task 3','Key feedback','Pain points'],
+        rows:[
+          ['User 1','✅/❌ X phút','✅/❌','✅/❌','',''],
+          ['User 2','','','','',''],
+          ['User 3','','','','',''],
+        ]
+      },
+      { title:'💡 TỔNG HỢP INSIGHTS', fields:[
+        { label:'Điều hoạt động tốt *', type:'textarea', req:true,
+          placeholder:`• [Điều 1]: X/Y user hoàn thành dễ dàng — Giữ nguyên
+• [Điều 2]: ...
+• ` },
+        { label:'Điều cần cải thiện *', type:'textarea', req:true,
+          placeholder:`Critical (phải fix trước build):
+• [Vấn đề 1]: X/Y user gặp — Proposed fix: ...
+
+Minor (có thể fix sau):
+• [Vấn đề 2]: ...` },
+        { label:'Unexpected findings', type:'textarea',
+          placeholder:`Điều bất ngờ phát hiện:
+• [Finding] — Ảnh hưởng đến: [Scope / UX / AC]` },
+      ]},
+      { title:'✅ QUYẾT ĐỊNH', fields:[
+        { label:'Kết quả validate *', type:'options', req:true, opts:[
+          {l:'✅ Validated — Tiến hành build',c:'#1F7A4D'},
+          {l:'⚠️ Cần chỉnh sửa prototype — Test lại',c:'#C55A11'},
+          {l:'❌ Pivot — Thay đổi hướng giải pháp',c:'#B22222'}
+        ]},
+        { label:'Thay đổi cần làm', type:'textarea',
+          placeholder:`Trước khi chuyển sang Plan/Build:
+• [Thay đổi 1 trong prototype/design]
+• [Cập nhật AC/User Story nào]` },
+      ]},
+    ],
+    note:{ color:'#C55A11', bg:'#FCE4D6', text:'Prototype testing nên thực hiện với 3–5 user là đủ để phát hiện 80% vấn đề lớn. Mục tiêu không phải là sự hoàn hảo mà là phát hiện sớm các vấn đề quan trọng trước khi đầu tư phát triển.' }
+  },
+
+  {
+    id:'go-nogo',
+    tab:'discovery',
+    badge:'🚦 Go / No-Go', badgeColor:'#1F7A4D',
+    title:'Go / No-Go Decision Record',
+    owner:'PM / PO — CEO review (nếu L/XL)', when:'Cuối Discovery — chuyển sang Delivery',
+    desc:'Ghi lại quyết định Go hoặc No-Go với đầy đủ lý do và điều kiện. Là cột mốc chính thức kết thúc Discovery và bắt đầu Plan.',
+    chips:[{l:'Gate 2 — Discovery',c:'#1F7A4D'},{l:'CEO review L/XL',c:'#5B2D8E'}],
+    sections:[
+      { title:'📋 THÔNG TIN', fields:[
+        { label:'Opportunity / Feature *', type:'input', req:true, placeholder:`Tên — Link toàn bộ Discovery artifacts` },
+        { label:'Ngày quyết định *', type:'input', req:true, placeholder:`DD/MM/YYYY` },
+        { label:'Người ra quyết định *', type:'input', req:true, placeholder:`PM / PO / CEO (tùy complexity)` },
+      ]},
+      { title:'📦 CHECKLIST DISCOVERY ĐÃ HOÀN THÀNH', type:'checklist', items:[
+        { text:'Opportunity Brief đã được review và phê duyệt', req:true, owner:'PM/PO' },
+        { text:'Phỏng vấn ≥ 3 user thực tế đã thực hiện', req:true, owner:'BA/PM' },
+        { text:'Problem Statement rõ ràng, đã được stakeholder xác nhận', req:true, owner:'PM' },
+        { text:'Competitor/Market analysis đã hoàn thành', owner:'PM/BA' },
+        { text:'Business Case đã đánh giá ROI và risks', req:true, owner:'PM/PO' },
+        { text:'Prototype đã validate với người dùng thực', req:true, owner:'BA/PM' },
+        { text:'Success Metrics đã xác định rõ', req:true, owner:'PM/PO' },
+        { text:'Tech feasibility đã confirm với Dev Lead', req:true, owner:'Dev Lead' },
+      ]},
+      { title:'⚖️ TÓM TẮT', fields:[
+        { label:'Problem đã được validate *', type:'textarea', req:true,
+          placeholder:`Vấn đề được xác nhận bởi X/Y user phỏng vấn.
+Problem statement: "..."` },
+        { label:'Solution đã được validate *', type:'textarea', req:true,
+          placeholder:`Prototype test: X/Y user hoàn thành task thành công.
+Các vấn đề lớn đã được xử lý trong iteration.` },
+        { label:'Business value *', type:'textarea', req:true,
+          placeholder:`Value ước tính: ...
+ROI assessment: ...
+Strategic fit: ...` },
+        { label:'Key risks còn lại', type:'textarea',
+          placeholder:`Risks đã chấp nhận khi Go:
+• [Risk 1] — Mitigation plan: ...
+• [Risk 2] — ` },
+      ]},
+      { title:'🚦 QUYẾT ĐỊNH', fields:[
+        { label:'Quyết định chính thức *', type:'options', req:true, opts:[
+          {l:'✅ GO — Chuyển sang Plan & Build',c:'#1F7A4D'},
+          {l:'⚠️ GO có điều kiện — Xem bên dưới',c:'#C55A11'},
+          {l:'⏳ DEFER — Đưa vào backlog, review sau',c:'#6B7280'},
+          {l:'❌ NO-GO — Dừng, không tiến hành',c:'#B22222'}
+        ]},
+        { label:'Điều kiện (nếu có) *', type:'textarea',
+          placeholder:`Phải đáp ứng trước khi bắt đầu Plan:
+• Điều kiện 1: ...
+• Điều kiện 2: ...` },
+        { label:'Scope được phê duyệt', type:'textarea', req:true,
+          placeholder:`Scope chính thức được GO:
+• IN: ...
+• OUT (defer): ...
+• Luồng áp dụng: Luồng 2 / Luồng 3` },
+      ]},
+      { title:'✍️ XÁC NHẬN', type:'table',
+        headers:['Vai trò','Tên','Quyết định','Ngày'],
+        rows:[
+          ['PM / PO','','GO / No-Go',''],
+          ['CEO (nếu L/XL)','','GO / No-Go',''],
+        ]
+      },
+    ],
+    note:{ color:'#1F7A4D', bg:'#DCFCE7', text:'Go/No-Go record phải được lưu trên Wiki và đính kèm vào Jira Epic. Đây là cột mốc chính thức — sau GO, mọi thay đổi scope phải qua Change Request.' }
+  },
+
 ];
 
 // ─── RENDER ──────────────────────────────────────
@@ -1124,6 +1587,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 <div id="panel-report"  class="tab-panel"><div class="tmpl-grid" id="grid-report"></div></div>
 <div id="panel-meeting" class="tab-panel"><div class="tmpl-grid" id="grid-meeting"></div></div>
 <div id="panel-product" class="tab-panel"><div class="tmpl-grid" id="grid-product"></div></div>
+<div id="panel-discovery" class="tab-panel"><div class="tmpl-grid" id="grid-discovery"></div></div>
 
 </div><!-- end body -->
 
